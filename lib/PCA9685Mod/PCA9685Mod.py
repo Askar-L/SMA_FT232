@@ -22,19 +22,11 @@ class PCA9685Mod(object):
   __ALLLED_OFF_L       = 0xFC
   __ALLLED_OFF_H       = 0xFD
   
-  def __init__(self, address=0x40, debug=False,easy_mdoe = False):
+  def __init__(self, i2c_controller,address=0x40, debug=False,easy_mdoe = False):
     print("New PCA9685 IIC slave created: ",hex(address))
     
-    # Instantiate an I2C controller
-    i2c_controller = i2c.I2cController()
-    # Configure the first interface (IF/1) of the FTDI device as an I2C master
-    i2c_controller.configure('ftdi:///1') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
     self.i2c_controller = i2c_controller
-
-    self.gpio = i2c_controller.get_gpio()
-
     # self.FT232_chip = i2c_controller.ftdi()
-
     
     # Get a port to an I2C slave device
     self.slave = i2c_controller.get_port( address ) # 0x21 

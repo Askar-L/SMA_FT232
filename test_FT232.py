@@ -1,4 +1,3 @@
-# import pygame
 # from test import test_FT232HQ
 
 # https://eblot.github.io/pyftdi/api/index.html

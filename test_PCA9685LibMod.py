@@ -3,6 +3,7 @@ from email.headerregistry import Address
 import errno
 from multiprocessing.dummy import active_children
 from re import T
+from symbol import tfpdef
 import time
 from turtle import end_fill
 
@@ -10,12 +11,19 @@ from turtle import end_fill
 # from lib.pyftdi_mod import i2c as i2c
 
 import lib.PCA9685Mod as PCA9685
+import pyftdi.i2c as i2c
 
 
 if __name__=='__main__':
+
+  # Instantiate an I2C controller
+  IIC_device = i2c.I2cController()
+  # Configure the first interface (IF/1) of the FTDI device as an I2C master
+  IIC_device.configure('ftdi:///1') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+
   print('\n\n')
   pwm_addr = 0x40
-  device = PCA9685(address=pwm_addr, debug=False,easy_mdoe=True)
+  device = PCA9685(i2c_controller= IIC_device,address=pwm_addr, debug=False,easy_mdoe=True)
   device.reset()
 
   t=0
@@ -39,7 +47,7 @@ if __name__=='__main__':
     pass
     
     bust_interval = 0.12
-    while True:
+    while False:
       if bust_interval - 0.02 < 0 : bust_interval = 0.12
       else: bust_interval -= 0.02
       try:
@@ -74,13 +82,10 @@ if __name__=='__main__':
   
   while False: # Test reading sensor (Accelerometer meter)
     # TODO
-    device.gpio.set_direction(0x10, 0)
-    # device.gpio.set_direction(0x08 , 0)
+    IIC_device.gpio.set_direction(0x10, 0)
     print(device.i2c_controller.gpio_pins)
     print('read_gpio: \t',device.i2c_controller.read_gpio())
-    # print('read: \t','%08x'%device.gpio.read(),device.gpio.read() )
-    # print('direction: \t','%02x'%(device.gpio.direction),device.gpio.direction)
-    # print("pins: \t",'%08x'%(device.gpio.pins),device.gpio.pins)
+ 
     time.sleep(0.2)
 
     if False: # button input test
@@ -95,16 +100,37 @@ if __name__=='__main__':
 
       while True:
           led.value = button.value
+  
 
-  if True: # test one wire
+  while True: # Instant up required least time
+    print("Instant up sustain duty")
+    device.reset()
+    device.setPWMFreq(1000)
+    channels = [14,0]
+
+    tf = 0.28
+
+    dutys = [1,0.2,0] # [预热 响应 维持]
+    intervals = [tf,10,2.5]
+    device.test_wires(channels,dutys,intervals,conf0 = True)
+
+  while False: # Instant up sustain duty
+    print("Instant up sustain duty")
+    device.reset()
+    device.setPWMFreq(1000)
+    channels = [14,0]
+    dutys = [1,0.2,0] # [预热 响应 维持]
+    intervals = [0.3,10,2.5]
+    # device.testChannle(0)
+    device.test_wires(channels,dutys,intervals,conf0 = True)
+ 
+  if False: # test Slow up min duty
+    device.setPWMFreq(1000)
     channels = [14, 0]
     dutys = [0.4,1,0.02] # [预热 响应 维持]
     intervals = [1,0.1,1]
     # device.testChannle(0)
     device.test_wires(channels,dutys,intervals,conf0 = True)
-
-
-
 
   if False: # Find 1 second test
     device.setPWMFreq(1000)
