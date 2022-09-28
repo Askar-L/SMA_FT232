@@ -1,7 +1,7 @@
 import math, time, sys
 import pyftdi.i2c as i2c
 
-class PCA9685Mod(object):
+class Device(object):
   # Registers/etc.
   __SUBADR1            = 0x02
   __SUBADR2            = 0x03

@@ -1,16 +1,10 @@
-from ast import Try
-from email.headerregistry import Address
-import errno
-from multiprocessing.dummy import active_children
-from re import T
-from symbol import tfpdef
-import time
-from turtle import end_fill
 
+import time
 # sys.path.append("..")
 # from lib.pyftdi_mod import i2c as i2c
 
-import lib.PCA9685Mod as PCA9685
+import lib.PCA9685.device as PCA9685
+import lib.LSM6DS3.device as LSM6DS3
 import pyftdi.i2c as i2c
 
 
@@ -23,7 +17,7 @@ if __name__=='__main__':
 
   print('\n\n')
   pwm_addr = 0x40
-  device = PCA9685(i2c_controller= IIC_device,address=pwm_addr, debug=False,easy_mdoe=True)
+  device = PCA9685.Device(i2c_controller= IIC_device,address=pwm_addr, debug=False,easy_mdoe=True)
   device.reset()
 
   t=0
@@ -191,7 +185,7 @@ if __name__=='__main__':
 
       except Exception as err: 
         print('Err: ',err,"\n Try Restart in:",0.4); time.sleep(0.4)
-        try: device = PCA9685(address=pwm_addr, debug=False,easy_mdoe=True); device.reset()
+        try: device = PCA9685_lib(address=pwm_addr, debug=False,easy_mdoe=True); device.reset()
         except Exception as err2: print('\tErr: ',err2,"\n when restarting in 1s:")
       
       # active_duty *= 1.1
