@@ -3,8 +3,8 @@ import time
 # sys.path.append("..")
 # from lib.pyftdi_mod import i2c as i2c
 
-import lib.PCA9685.device as PCA9685
-import lib.LSM6DS3.device as LSM6DS3
+import lib.PCA9685.pca9685 as PCA9685
+import lib.LSM6DS3.lsm6ds3 as lsm6ds3
 import pyftdi.i2c as i2c
 
 
@@ -17,22 +17,22 @@ if __name__=='__main__':
 
   print('\n\n')
   pwm_addr = 0x40
-  device = PCA9685.Device(i2c_controller= IIC_device,address=pwm_addr, debug=False,easy_mdoe=True)
-  device.reset()
+  pca9685 = PCA9685.Device(i2c_controller= IIC_device,address=pwm_addr, debug=False,easy_mdoe=True)
+  pca9685.reset()
 
   t=0
   if False: # Example 4*C1LED
-    device.setPWMFreq(1000)
+    pca9685.setPWMFreq(1000)
 
     # pwm_device.setChannelDutyRatio(0,1)
 
     while t < -10:
       t_start = time.time()
       t += 1
-      device.setChannelDutyRatio(0,0,stop_sending=True)
+      pca9685.setChannelDutyRatio(0,0,stop_sending=True)
       t_end = time.time()
 
-      device.setChannelDutyRatio(0,1)
+      pca9685.setChannelDutyRatio(0,1)
 
       print(t_end-t_start)
       # pwm_device.setChannelDutyRatio(0,0.1*t)
@@ -45,40 +45,40 @@ if __name__=='__main__':
       if bust_interval - 0.02 < 0 : bust_interval = 0.12
       else: bust_interval -= 0.02
       try:
-        device.setChannelDutyRatio(0,0.05,stop_sending=False)  
-        device.setChannelDutyRatio(12,0,stop_sending=False) 
-        device.setChannelDutyRatio(13,0,stop_sending=False) 
-        device.setChannelDutyRatio(14,0,stop_sending=False) 
-        device.setChannelDutyRatio(15,0) 
+        pca9685.setChannelDutyRatio(0,0.05,stop_sending=False)  
+        pca9685.setChannelDutyRatio(12,0,stop_sending=False) 
+        pca9685.setChannelDutyRatio(13,0,stop_sending=False) 
+        pca9685.setChannelDutyRatio(14,0,stop_sending=False) 
+        pca9685.setChannelDutyRatio(15,0) 
         time.sleep(bust_interval)
 
-        device.setChannelDutyRatio(0,0,stop_sending=False)  
-        device.setChannelDutyRatio(12,0.05)  
+        pca9685.setChannelDutyRatio(0,0,stop_sending=False)  
+        pca9685.setChannelDutyRatio(12,0.05)  
         time.sleep(bust_interval)
         
-        device.setChannelDutyRatio(12,0,stop_sending=False)  
-        device.setChannelDutyRatio(13,1)  
+        pca9685.setChannelDutyRatio(12,0,stop_sending=False)  
+        pca9685.setChannelDutyRatio(13,1)  
         time.sleep(bust_interval)
 
-        device.setChannelDutyRatio(13,0,stop_sending=False)  
-        device.setChannelDutyRatio(14,0.5)  
+        pca9685.setChannelDutyRatio(13,0,stop_sending=False)  
+        pca9685.setChannelDutyRatio(14,0.5)  
         time.sleep(bust_interval)
 
-        device.setChannelDutyRatio(14,0,stop_sending=False)  
-        device.setChannelDutyRatio(15,0.5)  
+        pca9685.setChannelDutyRatio(14,0,stop_sending=False)  
+        pca9685.setChannelDutyRatio(15,0.5)  
         time.sleep(bust_interval)
 
       except Exception as err: 
         print('Err: ',err,"\n Try Restart in:",4*bust_interval)
         time.sleep(4*bust_interval)
-        try: device.reset()
+        try: pca9685.reset()
         except Exception as err2: print('\tErr: ',err2,"\n when restarting in 1s:")
   
   while False: # Test reading sensor (Accelerometer meter)
     # TODO
     IIC_device.gpio.set_direction(0x10, 0)
-    print(device.i2c_controller.gpio_pins)
-    print('read_gpio: \t',device.i2c_controller.read_gpio())
+    print(pca9685.i2c_controller.gpio_pins)
+    print('read_gpio: \t',pca9685.i2c_controller.read_gpio())
  
     time.sleep(0.2)
 
@@ -98,36 +98,36 @@ if __name__=='__main__':
 
   while True: # Instant up required least time
     print("Instant up sustain duty")
-    device.reset()
-    device.setPWMFreq(1000)
+    pca9685.reset()
+    pca9685.setPWMFreq(1000)
     channels = [14,0]
 
     tf = 0.28
 
     dutys = [1,0.2,0] # [预热 响应 维持]
     intervals = [tf,10,2.5]
-    device.test_wires(channels,dutys,intervals,conf0 = True)
+    pca9685.test_wires(channels,dutys,intervals,conf0 = True)
 
   while False: # Instant up sustain duty
     print("Instant up sustain duty")
-    device.reset()
-    device.setPWMFreq(1000)
+    pca9685.reset()
+    pca9685.setPWMFreq(1000)
     channels = [14,0]
     dutys = [1,0.2,0] # [预热 响应 维持]
     intervals = [0.3,10,2.5]
     # device.testChannle(0)
-    device.test_wires(channels,dutys,intervals,conf0 = True)
+    pca9685.test_wires(channels,dutys,intervals,conf0 = True)
  
   if False: # test Slow up min duty
-    device.setPWMFreq(1000)
+    pca9685.setPWMFreq(1000)
     channels = [14, 0]
     dutys = [0.4,1,0.02] # [预热 响应 维持]
     intervals = [1,0.1,1]
     # device.testChannle(0)
-    device.test_wires(channels,dutys,intervals,conf0 = True)
+    pca9685.test_wires(channels,dutys,intervals,conf0 = True)
 
   if False: # Find 1 second test
-    device.setPWMFreq(1000)
+    pca9685.setPWMFreq(1000)
     channels = [14, 0]
     dutys = [0.4,1,0.25] # [预热 响应 维持]
     intervals = [1,0.1,1] 
@@ -140,7 +140,7 @@ if __name__=='__main__':
       # dutys = [0.4,_d,0.13,0] # [预热 响应 维持]
       # intervals = [0.14,0.5,1.5,2] 
       # print(channels[0:-2])
-      device.test_wires(channels,dutys,intervals,conf0 = True)
+      pca9685.test_wires(channels,dutys,intervals,conf0 = True)
       
     pass
     exit()
@@ -158,7 +158,7 @@ if __name__=='__main__':
 
     while round_count < 1000000000 : 
       round_count += 0
-      device.setPWMFreq(25)
+      pca9685.setPWMFreq(25)
       try:
         # pwm_device.setDutyRatioCH(15,0,stop_sending=False)
 
@@ -166,9 +166,9 @@ if __name__=='__main__':
         # pwm_device.setDutyRatioCH(14,active_duty)  
         # pwm_device.setDutyRatioCH(14,sustain_duty)  
         
-        device.setDutyRatioCH(14,0.2)  
-        device.setDutyRatioCH(14,0.054)
-        device.setDutyRatioCH(14,0.0)  
+        pca9685.setDutyRatioCH(14,0.2)  
+        pca9685.setDutyRatioCH(14,0.054)
+        pca9685.setDutyRatioCH(14,0.0)  
         # pwm_device.setDutyRatioCH(14,sustain_duty)    
         
         # time.sleep(bust_interval)
@@ -185,51 +185,51 @@ if __name__=='__main__':
 
       except Exception as err: 
         print('Err: ',err,"\n Try Restart in:",0.4); time.sleep(0.4)
-        try: device = PCA9685_lib(address=pwm_addr, debug=False,easy_mdoe=True); device.reset()
+        try: pca9685 = PCA9685_lib(address=pwm_addr, debug=False,easy_mdoe=True); pca9685.reset()
         except Exception as err2: print('\tErr: ',err2,"\n when restarting in 1s:")
       
       # active_duty *= 1.1
       # sustain_duty *= 1.1
 
-    device.setDutyRatioCH(0,0,stop_sending=False)  
-    device.setDutyRatioCH(14,0,stop_sending=False)  
-    device.setDutyRatioCH(15,0)  
+    pca9685.setDutyRatioCH(0,0,stop_sending=False)  
+    pca9685.setDutyRatioCH(14,0,stop_sending=False)  
+    pca9685.setDutyRatioCH(15,0)  
 
   if False: # Example 2*C2LED
-    device.setPWMFreq(1000)
+    pca9685.setPWMFreq(1000)
     bust_interval = 0.12
 
     while True:
       if bust_interval - 0.02 < 0 : bust_interval = 0.12
       else: bust_interval -= 0.02
       try:
-        device.setChannelDutyRatio(0,0.5,stop_sending=False)  
-        device.setChannelDutyRatio(12,0,stop_sending=False) 
-        device.setChannelDutyRatio(13,0,stop_sending=False) 
-        device.setChannelDutyRatio(14,0,stop_sending=False) 
-        device.setChannelDutyRatio(15,0) 
+        pca9685.setChannelDutyRatio(0,0.5,stop_sending=False)  
+        pca9685.setChannelDutyRatio(12,0,stop_sending=False) 
+        pca9685.setChannelDutyRatio(13,0,stop_sending=False) 
+        pca9685.setChannelDutyRatio(14,0,stop_sending=False) 
+        pca9685.setChannelDutyRatio(15,0) 
         time.sleep(bust_interval)
 
-        device.setChannelDutyRatio(0,0,stop_sending=False)  
-        device.setChannelDutyRatio(12,1)  
+        pca9685.setChannelDutyRatio(0,0,stop_sending=False)  
+        pca9685.setChannelDutyRatio(12,1)  
         time.sleep(bust_interval)
         
-        device.setChannelDutyRatio(12,0,stop_sending=False)  
-        device.setChannelDutyRatio(13,1)  
+        pca9685.setChannelDutyRatio(12,0,stop_sending=False)  
+        pca9685.setChannelDutyRatio(13,1)  
         time.sleep(bust_interval)
 
-        device.setChannelDutyRatio(13,0,stop_sending=False)  
-        device.setChannelDutyRatio(14,1)  
+        pca9685.setChannelDutyRatio(13,0,stop_sending=False)  
+        pca9685.setChannelDutyRatio(14,1)  
         time.sleep(bust_interval)
 
-        device.setChannelDutyRatio(14,0,stop_sending=False)  
-        device.setChannelDutyRatio(15,1)  
+        pca9685.setChannelDutyRatio(14,0,stop_sending=False)  
+        pca9685.setChannelDutyRatio(15,1)  
         time.sleep(bust_interval)
 
       except Exception as err: 
         print('Err: ',err,"\n Try Restart in:",4*bust_interval)
         time.sleep(4*bust_interval)
-        try: device.reset()
+        try: pca9685.reset()
         except Exception as err2: print('\tErr: ',err2,"\n when restarting in 1s:")
       # pwm_device.setChannelDutyRatio(14,1,stop_sending=False)  
       
@@ -237,9 +237,9 @@ if __name__=='__main__':
       t_start = time.time()
       for dt in range(5):
         for ch in range(16):
-            device.setChannelDutyRatio(ch,dt/100,stop_sending=False)  
+            pca9685.setChannelDutyRatio(ch,dt/100,stop_sending=False)  
       t_end = time.time()
-      device.setChannelDutyRatio(0,0.30,stop_sending=True)  
+      pca9685.setChannelDutyRatio(0,0.30,stop_sending=True)  
       print('Final',t_end-t_start)
   
   while False:
@@ -259,9 +259,9 @@ if __name__=='__main__':
   while False:
    # setServoPulse(2,2500)
     for i in range(500,2500,10):  
-      device.setServoPulse(0,i)   
+      pca9685.setServoPulse(0,i)   
       time.sleep(0.02)     
 
     for i in range(2500,500,-10):
-      device.setServoPulse(0,i) 
+      pca9685.setServoPulse(0,i) 
       time.sleep(0.02)
