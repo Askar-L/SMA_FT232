@@ -21,31 +21,52 @@ if __name__=='__main__':
     # lsm6ds3.reset()
     
     axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
+    labels = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z']
+    all_list = [[],[],[],[],[],[],[]]
+    for t in range(20000):
+        axis_x.append(t); plt.clf() 
 
+        st = time.time()      
+        res = lsm6ds3.readHighSpeed() # 0.017958402633666992 S
+        # print("readWordSpeed: ",res)
+        ed = time.time()
+        # print("It uses: ",ed-st,"S")
+        for _i in range(3): 
+            i = _i+1
+            all_list[i].append(res[i])
+            plt.plot(axis_x,all_list[i],label = labels[i])
+        
+        # if t%100 == 0: all_list = [[],[],[],[],[],[],[]];axis_x = []
+ 
+
+            
+        # plt.legend()
+        plt.pause(0.001); plt.ioff()
+        pass
+    
     t = 0
     for t in range(20000):
-        print() 
-        angle = lsm6ds3.calcAnglesXY()
-        angle = (int) (angle * 1000)
+        axis_x.append(t); plt.clf() 
+        # angle = lsm6ds3.calcAnglesXY()
+        # angle = (int) (angle * 1000)
         
-        # temp = lsm6ds3.readTemp()
-        # t_list.append(temp)
+        # temp = lsm6ds3.temp();
+        # t_list.append(lsm6ds3.readWord(0x20));plt.plot(axis_x,t_list) # temp
         # y_list.append(temp)
-        x_list.append(lsm6ds3.readRawAccel(0))
-        y_list.append(lsm6ds3.readRawAccel(1))
-        z_list.append(lsm6ds3.readRawAccel(2))
+
+        x_list.append(lsm6ds3.rawAngularRate(0));plt.plot(axis_x,x_list)
+        y_list.append(lsm6ds3.rawAngularRate(1));plt.plot(axis_x,y_list)
+        z_list.append(lsm6ds3.rawAngularRate(2));plt.plot(axis_x,z_list)
+        
+        # x_list.append(lsm6ds3.rawLinearAcc(0))
+        # y_list.append(lsm6ds3.rawLinearAcc(1))
+        # z_list.append(lsm6ds3.rawLinearAcc(2))
             
-        axis_x.append(t)
-
-        plt.clf()
-        plt.plot(axis_x,x_list)
-        plt.plot(axis_x,y_list)
-        plt.plot(axis_x,z_list)
-        # plt.plot(axis_x,t_list)
-
-
-        plt.pause(0.001)
-        plt.ioff()
+        
+        # plt.plot(axis_x,y_list)
+        # plt.plot(axis_x,z_list)
+        
+        plt.pause(0.001); plt.ioff()
         # exit()
         # import Adafruit_GPIO.I2C as I2C
         # i2c = I2C.get_i2c_device(0x6A)

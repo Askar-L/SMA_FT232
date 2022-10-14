@@ -4,7 +4,7 @@ import time
 # from lib.pyftdi_mod import i2c as i2c
 
 import lib.PCA9685.pca9685 as PCA9685
-import lib.LSM6DS3.lsm6ds3 as lsm6ds3
+# import lib.LSM6DS3.lsm6ds3 as lsm6ds3
 import pyftdi.i2c as i2c
 
 
@@ -95,18 +95,34 @@ if __name__=='__main__':
       while True:
           led.value = button.value
   
+  while True:
+    pca9685.reset()
+    pca9685.setPWMFreq(1000)
+    
+    channels = [12,13,14,0]
+    dutys = [0] # [预热 响应 维持]
+    intervals = [2]
+    pca9685.test_wires(channels,dutys,intervals,conf0 = True)
+
+    channels = [12,14,0]
+    dutys = [1] # [预热 响应 维持]
+    intervals = [20]
+    pca9685.test_wires(channels,dutys,intervals,conf0 = True)
+    
+    exit()
 
   while True: # Instant up required least time
     print("Instant up sustain duty")
     pca9685.reset()
     pca9685.setPWMFreq(1000)
-    channels = [14,0]
+    channels = [12,14,0]
 
     tf = 0.28
 
     dutys = [1,0.2,0] # [预热 响应 维持]
     intervals = [tf,10,2.5]
     pca9685.test_wires(channels,dutys,intervals,conf0 = True)
+    
 
   while False: # Instant up sustain duty
     print("Instant up sustain duty")

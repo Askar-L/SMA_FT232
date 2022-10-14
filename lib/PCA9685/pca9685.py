@@ -1,3 +1,5 @@
+# Created by Askar 
+# Modified in 2022 10 14
 import math, time, sys
 import pyftdi.i2c as i2c
 
