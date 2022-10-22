@@ -2,9 +2,7 @@
 import time
 # sys.path.append("..")
 # from lib.pyftdi_mod import i2c as i2c
-
-import lib.PCA9685.pca9685 as PCA9685
-# import lib.LSM6DS3.lsm6ds3 as lsm6ds3
+from pca9685.PCA9685 import Pca9685_01 as PCA9685
 import pyftdi.i2c as i2c
 
 
@@ -13,12 +11,15 @@ if __name__=='__main__':
   # Instantiate an I2C controller
   IIC_device = i2c.I2cController()
   # Configure the first interface (IF/1) of the FTDI device as an I2C master
-  IIC_device.configure('ftdi:///1') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+  IIC_device.configure('ftdi://ftdi:232h:0/1') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
 
   print('\n\n')
   pwm_addr = 0x40
-  pca9685 = PCA9685.Device(i2c_controller= IIC_device,address=pwm_addr, debug=False,easy_mdoe=True)
+  pca9685 = PCA9685(IIC_device,debug=False,easy_mdoe=True)
   pca9685.reset()
+
+  exit()
+
 
   t=0
   if False: # Example 4*C1LED

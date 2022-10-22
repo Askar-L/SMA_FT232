@@ -1,9 +1,9 @@
-# Created by Askar 
+# Created by Askar based on a gitbuh project
 # Modified in 2022 10 14
 import math, time, sys
 import pyftdi.i2c as i2c
 
-class Device(object):
+class Pca9685_01(object):
   # Registers/etc.
   __SUBADR1            = 0x02
   __SUBADR2            = 0x03
@@ -24,8 +24,8 @@ class Device(object):
   __ALLLED_OFF_L       = 0xFC
   __ALLLED_OFF_H       = 0xFD
   
-  def __init__(self, i2c_controller,address=0x40, debug=False,easy_mdoe = False):
-    print("New PCA9685 IIC slave created: ",hex(address))
+  def __init__(self, i2c_controller,address=0x40,easy_mdoe= True,debug=False,):
+    print("Creating New PCA9685 IIC slave :",hex(address))
     
     self.i2c_controller = i2c_controller
     # self.FT232_chip = i2c_controller.ftdi()
@@ -48,35 +48,37 @@ class Device(object):
     if (self.debug): 
       print("Reseting PCA9685: ",'%#x'%self.address )
       print("Initial Mode_1 reg value: ",'%#x'%self.read(self.__MODE1))
+    print("PCA9685 Device created!")
 
   def reset(self): #BUG
+    #     The SWRST Call function is defined as the following:
+    # 1. A START command is sent by the I2C-bus master.
 
-      #     The SWRST Call function is defined as the following:
-      # 1. A START command is sent by the I2C-bus master.
+    # 2. The reserved SWRST I2C-bus address ‘0000 0000’ with the R/W bit set to ‘0’ (write) is
+    # sent by the I2C-bus master.
 
-      # 2. The reserved SWRST I2C-bus address ‘0000 0000’ with the R/W bit set to ‘0’ (write) is
-      # sent by the I2C-bus master.
+    # 3. The PCA9685 device(s) acknowledge(s) after seeing the General Call address
+    # ‘0000 0000’ (00h) only. If the R/W bit is set to ‘1’ (read), no acknowledge is returned to
+    # the I2C-bus master.
 
-      # 3. The PCA9685 device(s) acknowledge(s) after seeing the General Call address
-      # ‘0000 0000’ (00h) only. If the R/W bit is set to ‘1’ (read), no acknowledge is returned to
-      # the I2C-bus master.
+    # 4. Once the General Call address has been sent and acknowledged, the master sends
+    # 1 byte with 1 specific value (SWRST data byte 1):
+    # a. Byte 1 = 06h: the PCA9685 acknowledges this value only. If byte 1 is not equal to
+    # 06h, the PCA9685 does not acknowledge it.
+    # If more than 1 byte of data is sent, the PCA9685 does not acknowledge any more.
 
-      # 4. Once the General Call address has been sent and acknowledged, the master sends
-      # 1 byte with 1 specific value (SWRST data byte 1):
-      # a. Byte 1 = 06h: the PCA9685 acknowledges this value only. If byte 1 is not equal to
-      # 06h, the PCA9685 does not acknowledge it.
-      # If more than 1 byte of data is sent, the PCA9685 does not acknowledge any more.
-
-      # 5. Once the correct byte (SWRST data byte 1) has been sent and correctly
-      # acknowledged, the master sends a STOP command to end the SWRST Call: the
-      # PCA9685 then resets to the default value (power-up value) and is ready to be
-      # addressed again within the specified bus free time (tBUF).
-    print('\n Resetting PCA9685 board:0x%02X'%self.address)
+    # 5. Once the correct byte (SWRST data byte 1) has been sent and correctly
+    # acknowledged, the master sends a STOP command to end the SWRST Call: the
+    # PCA9685 then resets to the default value (power-up value) and is ready to be
+    # addressed again within the specified bus free time (tBUF).
+    
     __SWRST = 0b00000110
     
     print(self.read(__SWRST))
 
     self.write(0x00,bytearray([0x06]))
+    print('\nSucess Reseted PCA9685 board:0x%02X'%self.address)
+    return []
 
   def restart(self):
     print('\n Restart PCA9685 board:0x%02X\n\tThe PWM in regs will be runned from the start'%self.address)
@@ -194,16 +196,6 @@ class Device(object):
     self.slave.write_to( regaddr=self.__PRESCALE, out=bytearray([prescale]) ) # Value
     print("\tBack to awake mode")
     self.slave.write_to( regaddr=self.__MODE1, out=bytearray([oldmode])) # Restart sign
-
-
-    # self.write(self.__MODE1, newmode,False)        # go to sleep
-    # print("\tWritting value: ",prescale,", to prescale reg 0x%02x"%prescale)
-    # self.write(self.__PRESCALE, prescale,False)
-    # print("\tBack to awake mode")
-    # self.write(self.__MODE1, oldmode,False)
-    
-    # time.sleep(0.005) # 20220729 remove
-    # self.write(self.__MODE1, oldmode | 0x80) # Restart sign
   
   def getPWMFreq(self):
     cur_prescala = self.read(self.__PRESCALE)

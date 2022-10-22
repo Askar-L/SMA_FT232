@@ -1,8 +1,12 @@
 # This file is to find out how to read sensoe values of LSM6DS3
 # import lib.LSM6DS3.lsm6ds3 as LSM6DS3
+from audioop import avg
 import time
 from matplotlib import pyplot as plt
-from lib.LSM6DS3.lsm6ds3 import LSM6DS3mb as LSM6DS3
+import numpy as np
+from  lsm6ds3.LSM6DS3 import Lsm6ds3_01 as LSM
+from pca9685.PCA9685 import Pca9685_01 as PCA
+
 # sys.path.append("..")
 
 import pyftdi.i2c as i2c
@@ -13,13 +17,28 @@ if __name__=='__main__':
     # Instantiate an I2C controller
     IIC_device = i2c.I2cController()
     # Configure the first interface (IF/1) of the FTDI device as an I2C master
-    IIC_device.configure('ftdi:///1') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+    IIC_device.configure('ftdi://ftdi:232h:0/1',frequency= 400E3) # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
 
     print('\n\n')
-    lsm_addr = 0x6b
-    lsm6ds3 = LSM6DS3(i2c_controller= IIC_device,address= lsm_addr, debug=False,pause=0.8)
+    lsm6ds3 = LSM(IIC_device) #LSM(i2c_controller= IIC_device,address= lsm_addr, debug=False,pause=0.8)
+    lsm6ds3.reset()
     # lsm6ds3.reset()
-    
+
+    if True: # latency test
+        latencys = []
+        for t in range(100):
+            st = time.time()      
+            res = lsm6ds3.readHighSpeed() 
+            # doesnt decrease after 400E3
+            # 0.0179 S // 0.0169 for 400E3 // 0.0180 for 100E3 // 0.0167 for 100E4
+            # 0.0319// 100E2; 0.0197 500E2
+            ed = time.time()
+            latencys.append(ed-st)
+        print(np.mean(latencys))
+        exit()
+        pass
+        
+
     axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
     labels = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z']
     all_list = [[],[],[],[],[],[],[]]
@@ -31,15 +50,13 @@ if __name__=='__main__':
         # print("readWordSpeed: ",res)
         ed = time.time()
         # print("It uses: ",ed-st,"S")
-        for _i in range(3): 
+
+        for _i in range(6): 
             i = _i+1
             all_list[i].append(res[i])
             plt.plot(axis_x,all_list[i],label = labels[i])
         
         # if t%100 == 0: all_list = [[],[],[],[],[],[],[]];axis_x = []
- 
-
-            
         # plt.legend()
         plt.pause(0.001); plt.ioff()
         pass
