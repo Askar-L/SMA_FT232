@@ -39,7 +39,7 @@ class Lsm6ds3_01:
     
   def __init__(self,i2c_controller,address=0x6b, debug=False):
     print("Creating New LSM6DS3 IIC slave :",hex(address))
-    self.i2c = i2c_controller
+    self.i2c_controller = i2c_controller
     self.address = address
 
     # self.slave = i2c_controller # I2C.get_i2c_device(address)
@@ -146,17 +146,20 @@ class Lsm6ds3_01:
     if accel_H>>7: acc_int = acc_int - (1<<16)
     return acc_int
 
-  def readSensors(self):
+  def readSensors(self,return_mode=1):
     _data = self.readHighSpeed()
+    # print(_data)
     _data = [_/32767 for _ in _data] # To (-1,1)
 
+    _data[4:7] = [ _*self.range_LA for _ in _data[4:7] ] # LA_reading
+    _data[1:4] = [ _*self.range_AR for _ in _data[1:4] ] # AR_reading
+    if return_mode==1:return _data
+
     temp = _data[0]
-    LA_reading = [ _*self.range_LA for _ in _data[4:7] ] 
-    AR_reading = [ _*self.range_AR for _ in _data[1:4] ] 
-    # print('\n',_data)
-    # print('\n',LA_reading,AR_reading)
-    # LA /= 
+    LA_reading = _data[4:7]
+    AR_reading = _data[1:4]
     return temp,LA_reading,AR_reading
+    
 
   def readHighSpeed(self,start_addr=0,len_load = 7): # 
     if start_addr + len_load > 7:
@@ -164,11 +167,14 @@ class Lsm6ds3_01:
     
     start_addr += self.__OUT_TEMP_L
     retry_load_max = 5
-    hex_raw = []   
+    hex_raw = self.slave.read_from(start_addr,len_load*2)   
     
     while not len(hex_raw) == len_load*2: # Retry loading
-      if retry_load_max <= 0: print("Failed when loading:",len_load,"*2 bytes data.");break
+      retry_load_max -= 1
+      if retry_load_max <= 0: 
+        print("Failed when loading:",len_load,"*2 bytes data.");return []
       hex_raw = self.slave.read_from(start_addr,len_load*2)
+
     if not retry_load_max == 5: print("\n\nAlert!: lsm6ds3.readHighSpeed() retired ",5-retry_load_max,'times.')
 
     i = 0; output = []
@@ -179,6 +185,7 @@ class Lsm6ds3_01:
       else: output.append(_byte)
       i += 1
 
+    # print('output',output)
     return output
 
   def temp(self): return self.readWord(self.__OUT_TEMP_L) # self.__OUT_TEMP_L
