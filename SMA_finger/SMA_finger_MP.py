@@ -100,8 +100,9 @@ from multiprocessing import  Process
 DUTYS =  [1,0.2]   # [预热 响应 维持]c
 INTERVALS = [0.2,1]
 FIG_FOLDER = "./IMG/"
-TIME_OUT = 3
+TIME_OUT = 5
 RUNTIME = time.localtime()
+DO_PLOT = False
 
 def test_dual_ftdi(addr): # 
     url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0/1') 
@@ -318,7 +319,7 @@ if __name__=='__main__': # Test codes # Main process
 
     url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:1/1') 
     url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0/1')
-    do_plot = False
+    do_plot = DO_PLOT
 
     case = 1
     # i2c_device_0,i2c_device_1 = test_dual_ftdi()
@@ -334,7 +335,7 @@ if __name__=='__main__': # Test codes # Main process
     
 
     process_sensor.start()
-    time.sleep(0.5)
+    time.sleep(1)
     process_ctrl.start()
     time.sleep(0.5)
     
