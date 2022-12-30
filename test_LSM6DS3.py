@@ -11,8 +11,16 @@ from pca9685.PCA9685 import Pca9685_01 as PCA
 
 import pyftdi.i2c as i2c
 
+def test_FIFO():
+    
+    pass
+
 # a = 11<<2;=> 1011->101100;print(a)-->44;exit()
 if __name__=='__main__':
+
+
+    exit()
+
     plt.ion()
     # Instantiate an I2C controller
     IIC_device = i2c.I2cController()

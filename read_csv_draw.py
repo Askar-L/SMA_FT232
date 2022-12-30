@@ -8,7 +8,7 @@ FIG_FOLDER = "./IMG/"
 TIME_OUT = 5
 RUNTIME = time.localtime()
 DO_PLOT = False
-
+ 
 FIG_SIZE = (10,6) #(12.8,7.2)#(19.2,10.8)
 
 
