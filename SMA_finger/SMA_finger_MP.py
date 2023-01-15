@@ -3,6 +3,7 @@
 # * Multi Process version
 # Class of SMA single finger robot 
 # Created by Askar. Liu @ 20221020
+# Modified @20230115
 
 # if __name__=='__main__': # Test codes
 from asyncore import read
@@ -41,7 +42,9 @@ class SMAfingerMP_01(object):
         # Open port
         # pyftdi
         # i2c_controller.configure()
-        i2c_controller.configure('ftdi://ftdi:232h/1') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+        i2c_controller.configure('ftdi://ftdi:232h/') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+        # USB\VID_0403&PID_6014\6&263914d5&0&2
+        # USB\VID_0403&PID_6014\6&263914d5&0&1
 
         print('\n\n')
         lsm6ds3_A = LSM(i2c_controller,lsm_addr); lsm6ds3_A.reset()
@@ -107,39 +110,7 @@ RUNTIME = time.localtime()
 
 LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
 
-def test_dual_ftdi(addr): # 
-    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0/1') 
-    # ftdi://ftdi:232h/1 ftdi:///1 'ftdi://ftdi:232h:1'
-    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:1/1') 
-    # ftdi://ftdi:232h/1 ftdi:///1 'ftdi://ftdi:232h:1'
-
-    # address = os.environ.get('I2C_ADDRESS', '0x50').lower()
-    # addr = int(address, 16 if address.startswith('0x') else 10) # into dec
-    # # print("\address \t",address)
-    # # print("\addr \t",addr)
-    
-    i2c_device_0 = i2c.I2cController();i2c_device_1 = i2c.I2cController()
-    i2c_device_0.configure(url_0,frequency = 400E3)
-    i2c_device_1.configure(url_1,frequency = 400E3)
-    
-    if addr == 0x40: # PCA 
-        try: 
-            device = PCA(i2c_device_0,addr,debug=False); device.reset()
-        except Exception as err: 
-            print("\nErr @0x40",err)
-            device = PCA(i2c_device_1,addr,debug=False); device.reset()
-
-    elif addr == 0x6b: # Gryoscope address
-        try: 
-            device =LSM(i2c_device_0); device.reset()
-        except Exception as err:
-            print("\nErr @0x6b",err)
-            
-            device = LSM(i2c_device_1); device.reset()
-
-    return device
-
-def ctrlProcess(i2c_actuator_controller): # PCA 
+def ctrlProcess(i2c_actuator_controller_URL=[],actuator_device=[]): # PCA 
     
     print("\nCtrlProcess Starts")
     # Address Setting
@@ -154,8 +125,16 @@ def ctrlProcess(i2c_actuator_controller): # PCA
     # i2c_actuator_controller.configure(i2c_url)
 
     # actuator_device = PCA(i2c_actuator_controller,pca_addr,debug=False); actuator_device.reset()
+    if i2c_actuator_controller_URL==[]:
+        print('Empty input of i2c_actuator_controller_URL, finding URL')
+        actuator_device = findFtdiDevice(pca_addr)
+    elif actuator_device==[]: 
+        i2c_device = i2c.I2cController()
+        # print(i2c_actuator_controller_URL)
+        i2c_device.configure(i2c_actuator_controller_URL)
+        actuator_device = PCA(i2c_device,debug=False)
+        actuator_device.reset()
 
-    actuator_device = test_dual_ftdi(pca_addr)
     # Set wire initial state
     actuator_device.setPWMFreq(wire_freq)
     
@@ -174,26 +153,24 @@ def experiment_0(actuator_device,wire_channles):
     actuator_device.test_wires(wire_channles,dutys,intervals,conf0=True)
     pass
 
-
-def sense(i2c_sensor_controller_URL=[],do_plot=False): # NONE FIFO Version
+def sense_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): # NONE FIFO Version
     lsm_addr = 0x6b # Gryoscope address
     check_freq = 0.4 #S, EXIT check!
     check_interval = int(check_freq/0.017)
 
-    # i2c_sensor_controller = i2c.I2cController()    
-    # i2c_sensor_controller.configure(i2c_url)
-    # sensor_device = LSM(i2c_sensor_controller); sensor_device.reset()
-    if i2c_sensor_controller_URL==[]:
-        sensor_device = test_dual_ftdi(lsm_addr)
-    else: 
+    if i2c_sensor_controller_URL==[]: sensor_device = findFtdiDevice(lsm_addr)
+    elif sensor_device==[]:
+        print("Configuring device ",str(i2c_sensor_controller_URL)," for experiment")
         i2c_device = i2c.I2cController()
-        i2c_device.configure(i2c_sensor_controller_URL,frequency = 400E3)
-        sensor_device =LSM(i2c_device);sensor_device.reset()        
-
+        i2c_device.configure(i2c_sensor_controller_URL)
+        sensor_device =LSM(i2c_device)
+        sensor_device.reset()        
+        
     # plt.ion()
     axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
     all_list = [[],[],[],[],[],[],[],[]]
     
+    if not isinstance(sensor_device,LSM):print("Programe err! @ sense_LSM6DS3, pls check coding!"); exit()
     # Empty run for 1 sec
     t0 =  time.clock()
     sensor_device.changeRange()
@@ -248,7 +225,7 @@ def sense_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     check_interval = int(check_freq/0.017)
 
     if i2c_sensor_controller_URL==[]:
-        sensor_device = test_dual_ftdi(lsm_addr)
+        sensor_device = findFtdiDevice(lsm_addr)
     else: 
         i2c_device = i2c.I2cController()
         i2c_device.configure(i2c_sensor_controller_URL,frequency = 400E3)
@@ -300,20 +277,18 @@ def sense_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     sensor_device.i2c_controller.close()
     return data
 
-def sensorProcess(i2c_sensor_controller_URL=[],do_plot=False): # NONE FIFO Version
+def sensorProcess(i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False): # NONE FIFO Version
 
     print("\nSensorProcess Starts")
 
     if DO_PLOT:
-        data = sense(i2c_sensor_controller_URL,do_plot)
+        data = sense_LSM6DS3(i2c_sensor_controller_URL,LSM_device,do_plot)
     else:
-        data = sense(i2c_sensor_controller_URL,do_plot)
+        data = sense_LSM6DS3(i2c_sensor_controller_URL,LSM_device,do_plot)
         # data = sense_FIFO(i2c_sensor_controller_URL,do_plot)
         saveData(data,LABELS)
         saveFigure(data,LABELS)
     return []
-
-
 
 def saveData(data,labels):
     file_url=FIG_FOLDER+ time.strftime("_%b%d_%H.%M",RUNTIME)+str(DUTYS)+str(INTERVALS)  +'.csv'
@@ -346,49 +321,95 @@ def saveFigure(data,labels,show_img=False):
     plt.savefig(FIG_FOLDER+file_name,dpi=1000,bbox_inches = 'tight',pad_inches=0.1)
 
     if show_img: plt.show()
+ 
+def findFtdiDevice(addr): # find corresbonding device 
+    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1')  # ftdi://ftdi:232h:0/1
+    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1') 
+    # ftdi://ftdi:232h/1 ftdi:///1 'ftdi://ftdi:232h:1'
 
-
-
-if __name__=='__main__': # Test codes # Main process
+    # address = os.environ.get('I2C_ADDRESS', '0x50').lower()
+    # addr = int(address, 16 if address.startswith('0x') else 10) # into dec
+    # # print("\address \t",address)
+    # # print("\addr \t",addr)
     
-    # t_local_time = time.localtime(time.time())
-
-
-    # exit()
-    # usb_tool = ftdi.UsbTools()
-    # ftdi_devices = usb_tool.find_all( [[1027,24596]])
-
-    # print(ftdi_devices[0][0])
-
-    # ftdi_0 = usb_tool.get_device(ftdi_devices[0][0])
-    # ftdi_1 = usb_tool.get_device(ftdi_devices[1][0])
+    i2c_device_0 = i2c.I2cController();i2c_device_1 = i2c.I2cController()
+    i2c_device_0.configure(url_0,frequency = 400E3)
+    i2c_device_1.configure(url_1,frequency = 400E3)
     
-    # print(ftdi_1.serial_number)
-    # # print(ftdi_0.__getattribute__())
-    # # print("serial_number:",ftdi_0.serial_number)
-    # # ftdi_devices[0][0].
-    # # i2c_actuator_controller.configure(ftdi_devices[0][0])
+    if addr == 0x40: # PCA 
+        try: 
+            device = PCA(i2c_device_0,addr,debug=False); device.reset()
+        except Exception as err: 
+            print("\nErr @0x40",err)
+            device = PCA(i2c_device_1,addr,debug=False); device.reset()
 
-    # exit()
+    elif addr == 0x6b: # Gryoscope address
+        try: 
+            device =LSM(i2c_device_0); device.reset()
+        except Exception as err:
+            print("\nErr @0x6b",err)
+            
+            device = LSM(i2c_device_1); device.reset()
 
+    return device
 
-    # url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0/1') #"ftdi://ftdi:232h:0/1"
-    # url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:1/1')
+def findFtdiAddr(): 
+    # find corresbonding device 
+    # https://eblot.github.io/pyftdi/urlscheme.html
+    print('Finding correspoonding FTDI addr')
+    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1')  # ftdi://ftdi:232h:0/1
+    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1') 
+    # url_2 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FD/1') 
 
-    # i2c_controller = i2c.I2cController()
-    # i2c_controller.configure(url_0)
-    # # slave = i2c_controller.get_port(  ) 
+    url_list = [url_0,url_1]
 
-    # i2c_controller = i2c.I2cController()
-    # i2c_controller.configure(url_1)
+    i2c_addr_PCA = 0x40
+    i2c_addr_LSM = 0x6b
+    addr_PCA,addr_LSM = [],[]
+    _PCA_device,_LSM_device = [],[] 
+    device_list = []
+    # for _url in url_list: device_list.append(i2c.I2cController())
 
-    # exit()
+    # for _device in device_list:
+    _device = i2c.I2cController()
+    for _url in url_list:
+        try:
+            _device.configure(_url,frequency = 400E3)
+            _PCA_device = PCA(_device); _PCA_device.reset()
+            # _PCA_device.testChannle(0)
+            addr_PCA = _url
+            url_list.remove(_url)
+            print("Found PCA addr:",addr_PCA)
+            break
+        except Exception as err:  continue
 
-    print("\n\n")
-    print('Multi process version of SMA finger')
-    print( "%a %b %d %H:%M:%S %Y", time.localtime())
+    # for _device in device_list:
+    for _url in url_list:
+        try:
+            _device.configure(_url,frequency = 400E3)
+            _LSM_device = LSM(_device); _LSM_device.reset()
+            addr_LSM = _url
+            url_list.remove(_url)
+            print("Found LSM addr:",addr_LSM)
+            break
+        except Exception as err:  continue
+    
+    return addr_PCA,addr_LSM,_PCA_device,_LSM_device
 
-    # test_dual_ftdi()
+def i2c_test():
+
+    usb_tool = ftdi.UsbTools()
+    ftdi_devices = usb_tool.find_all( [[1027,24596]])
+    # ftdi_devices = usb_tool.find_all([[1027]])
+    print("\n",ftdi_devices)
+
+    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1') 
+    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1') 
+    # s.environ.get('FTDI_DEVICE','USB\VID_0403&PID_6014\6&263914D5&0&2') # ftdi:// [1027][:[24596][:|:0:254|:]] /1
+
+    i2c_device_0 = i2c.I2cController();i2c_device_1 = i2c.I2cController()
+    i2c_device_0.configure(url_0,frequency = 400E3)
+    i2c_device_0.configure(url_1,frequency = 400E3)
 
     #Ftdi Addr
     # devices = pyftdi.list_devices()
@@ -396,33 +417,60 @@ if __name__=='__main__': # Test codes # Main process
  
     # 'ftdi://{}:{}:{}/{}'.format(idn.vid,idn.pid,idn.sn, idn.address)
     # ftdi://[vendor][:[product][:serial|:bus:address|:index]]/interface
-    # ftdi[:232h[: :0:254|:index]]/interface
+    # ftdi[:232h[: :0:254|:]]/1
 
     # ftdi://1027:24569:
-    
- 
-    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:1/1') 
-    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0/1')
+    # USB\VID_0403&PID_6014\6&263914d5&0&2 
+        # ftdi://[VID_0403][:[PID_6014][:serial|:bus:address|:index]]/interface
+    # USB\VID_0403&PID_6014\6&263914d5&0&1
+
+    return []
+
+if __name__=='__main__': # Test codes # Main process
+    print("\n\n")
+    print('Multi process version of SMA finger')
+    print(time.strftime('%Y:%m:%d %H:%M:%S', time.localtime()))
     do_plot = DO_PLOT
+ 
+    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1') 
+    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1')
 
-    case = 1
-    # i2c_device_0,i2c_device_1 = test_dual_ftdi()
+    # url_PCA,url_LSM,PCA_device,LSM_device = findFtdiAddr()
+    url_PCA = url_0
+    url_LSM = url_1
 
-    # MP on
-    print("Two thread with Python threading library")
-    if case == 1:
-        process_ctrl = Process(target= ctrlProcess,args=(url_0,))
-        process_sensor = Process(target= sensorProcess, args=(url_1,do_plot))
-    else:
-        process_ctrl = Process(target= ctrlProcess,args=(url_1,))
-        process_sensor = Process(target= sensorProcess, args=(url_0,do_plot))
+    if url_PCA==[] or url_LSM==[]:
+        print("Failed on finding PCA or LSM device addr:",url_PCA,url_LSM); exit()
+    else : print("Found PCA, LSM device @:",url_PCA,url_LSM) 
+
+    process_ctrl = Process(target= ctrlProcess,args=(url_PCA,[]))
+    process_sensor = Process(target= sensorProcess, args=(url_LSM,[],do_plot))
     
+    # print(url_PCA,url_LSM);exit()
+    # case = 1
+    # # i2c_device_0,i2c_device_1 = test_dual_ftdi()
 
-    # process_sensor.start();process_sensor.join(); time.sleep(1)
-    # exit()
-    process_ctrl.start();process_ctrl.join(); time.sleep(0.5)
-   
+    # # MP on
+    # print("Two thread with Python threading library")
+    # if case == 1:
+    #     process_ctrl = Process(target= ctrlProcess,args=(url_0,))
+    #     process_sensor = Process(target= sensorProcess, args=(url_1,do_plot))
+    # else:
+    #     process_ctrl = Process(target= ctrlProcess,args=(url_1,))
+    #     process_sensor = Process(target= sensorProcess, args=(url_0,do_plot))
+
+
+    process_sensor.start(); time.sleep(1)
+    process_ctrl.start()
+
+    # process_sensor.join();time.sleep(1)
+    
+    
+    # process_ctrl.join()
+
+
+   #;time.sleep(0.1)
     # time.sleep(1)
     
     # exit()
-    finger = SMAfingerMP_01()
+    # finger = SMAfingerMP_01()

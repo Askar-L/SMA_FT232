@@ -139,6 +139,8 @@ class Pca9685_01(object):
     self.write(port+3, 0x04) # LOW H
     
     self.write(self.__MODE1, 0x01)
+    # time.pause(0.5)
+    self.setDutyRatioCH(channel_num,0,stop_sending=True)
 
     pass
 
