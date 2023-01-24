@@ -465,12 +465,8 @@ if __name__=='__main__': # Test codes # Main process
 
     # process_sensor.join();time.sleep(1)
     
-    
     # process_ctrl.join()
 
-
-   #;time.sleep(0.1)
-    # time.sleep(1)
     
     # exit()
     # finger = SMAfingerMP_01()
