@@ -224,10 +224,8 @@ class Ftdi:
     DRIVE_ZERO = 0x9e       # Drive-zero mode
 
     # USB control requests
-    REQ_OUT = build_request_type(CTRL_OUT, CTRL_TYPE_VENDOR,
-                                 CTRL_RECIPIENT_DEVICE)
-    REQ_IN = build_request_type(CTRL_IN, CTRL_TYPE_VENDOR,
-                                CTRL_RECIPIENT_DEVICE)
+    REQ_OUT = build_request_type(CTRL_OUT, CTRL_TYPE_VENDOR, CTRL_RECIPIENT_DEVICE)
+    REQ_IN = build_request_type(CTRL_IN, CTRL_TYPE_VENDOR, CTRL_RECIPIENT_DEVICE)
 
     # Requests
     SIO_REQ_RESET = 0x0              # Reset the port
@@ -1759,18 +1757,13 @@ class Ftdi:
 
     def write_data(self, data: Union[bytes, bytearray]) -> int:
         """Write data to the FTDI port.
+           In UART mode, data contains the serial stream to write to the UART interface.
+           In MPSSE mode, data contains the sequence of MPSSE commands and data.
 
-           In UART mode, data contains the serial stream to write to the UART
-           interface.
+           Data buffer is split into chunk-sized blocks before being sent over the USB bus.
 
-           In MPSSE mode, data contains the sequence of MPSSE commands and
-           data.
-
-           Data buffer is split into chunk-sized blocks before being sent over
-           the USB bus.
-
-           :param data: the byte stream to send to the FTDI interface
-           :return: count of written bytes
+           :param data: the byte stream to send to the FTDI interface 
+           return: count of written bytes
         """
         offset = 0
         size = len(data)

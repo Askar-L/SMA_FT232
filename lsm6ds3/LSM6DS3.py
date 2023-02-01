@@ -1,16 +1,10 @@
 # Created by Askar 
 # Modified in 2022 10 14
 
-# from base64 import b16encode
-# from cgitb import reset
-# from matplotlib.cbook import to_filehandle
+ 
 import pyftdi.i2c as i2c
 import math, time, sys
-
-# import Adafruit_GPIO.I2C as I2C
-# i2c = I2C.get_i2c_device(address)
-# i2c.write8(0X10, dataToWrite)
-
+ 
 class Lsm6ds3_01:
   # from https://github.com/maxofbritton/Raspberry-Pi-4x4-in-Schools-Project/blob/master/LSM6DS3.py
   # address = 0x6b

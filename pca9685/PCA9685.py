@@ -1,8 +1,6 @@
 # Created by Askar based on a gitbuh project
 # Modified in 2022 10 14
 import math, time, sys
-import pyftdi.i2c as i2c
-
 class Pca9685_01(object):
   # Registers/etc.
   __SUBADR1            = 0x02

@@ -15,7 +15,9 @@ parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0,parentdir)
 
 import numpy as np
+
 import pyftdi.i2c as i2c
+
 from matplotlib import pyplot as plt
 import time
 
@@ -40,7 +42,6 @@ class SMAfingerMP_01(object):
         i2c_controller = i2c.I2cController() # Create 
 
         # Open port
-        # pyftdi
         # i2c_controller.configure()
         i2c_controller.configure('ftdi://ftdi:232h/') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
         # USB\VID_0403&PID_6014\6&263914d5&0&2
