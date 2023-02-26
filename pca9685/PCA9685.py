@@ -1,6 +1,8 @@
 # Created by Askar based on a gitbuh project
 # Modified in 2022 10 14
 import math, time, sys
+from lib.GENERALFUNCTIONS import *
+
 class Pca9685_01(object):
   # Registers/etc.
   __SUBADR1            = 0x02
@@ -259,11 +261,12 @@ class Pca9685_01(object):
     return []
 
   def setDutyRatioCHS(self,channels,duty_ratio,stop_sending=True): # 20220815
-    if len(channels) < 1: print("\nNo target channel!"); return []
-    elif len(channels) > 1:
+    if len(channels) >= 1:
       for _ch in channels[:len(channels)-1]: 
         self.setDutyRatioCH(_ch,duty_ratio,stop_sending=False)
-    self.setDutyRatioCH(channels[-1],duty_ratio,stop_sending)    
+    else :print("\nNo target channel!"); return []
+    self.setDutyRatioCH(channels[-1],duty_ratio,stop_sending)   
+
     return []
 
   def setServoPulse(self, channel, pulse):
@@ -285,8 +288,12 @@ class Pca9685_01(object):
     if conf0 and not channels[-1]==0 : channels.append(0)
 
     for _duty,_interval in zip(dutys,intervals) :
-        print(channels,_duty,_interval)
+        print("PCA Setting Duty Ratio",channels,_duty,_interval)
         self.setDutyRatioCHS(channels,_duty)
+        print("DR set at:", time.time()- RUNTIME)
+
         time.sleep(_interval)
         self.setDutyRatioCHS(channels,0)
+        print("DR Over at:", time.time()- RUNTIME)
+
 

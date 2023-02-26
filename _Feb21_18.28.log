@@ -1,0 +1,53 @@
+
+SensorProcess Starts
+Configuring device  ftdi://ftdi:232h:0:FE/1  for experiment
+Process Process-2:
+Traceback (most recent call last):
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\multiprocessing\process.py", line 297, in _bootstrap
+    self.run()
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\multiprocessing\process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "e:\Desktop\20210721SMAFinger\Code\SMA_FT232\SMA_finger\SMA_finger_MP.py", line 351, in sensorProcess
+    data = sense_ADS1115(i2c_sensor_controller_URL,[],do_plot)
+  File "e:\Desktop\20210721SMAFinger\Code\SMA_FT232\SMA_finger\SMA_finger_MP.py", line 291, in sense_ADS1115
+    i2c_device.configure(i2c_sensor_controller_URL)
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\site-packages\pyftdi\i2c.py", line 498, in configure
+    frequency = self._ftdi.open_mpsse_from_url(url, **kwargs)
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\site-packages\pyftdi\ftdi.py", line 629, in open_mpsse_from_url
+    devdesc, interface = self.get_identifiers(url)
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\site-packages\pyftdi\ftdi.py", line 397, in get_identifiers
+    cls.DEFAULT_VENDOR)
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\site-packages\pyftdi\usbtools.py", line 329, in parse_url
+    urlstr) from None
+pyftdi.usbtools.UsbToolsError: No USB device matches URL ftdi://ftdi:232h:0:FE/1
+
+
+
+Multi process version of SMA finger
+2023:02:21 18:28:51
+Found PCA, LSM device @: ftdi://ftdi:232h:0:FF/1 ftdi://ftdi:232h:0:FE/1
+
+CtrlProcess Starts
+Creating New PCA9685 IIC slave : 0x40
+PCA9685 Device created!
+Process Process-1:
+Traceback (most recent call last):
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\multiprocessing\process.py", line 297, in _bootstrap
+    self.run()
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\multiprocessing\process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "e:\Desktop\20210721SMAFinger\Code\SMA_FT232\SMA_finger\SMA_finger_MP.py", line 137, in ctrlProcess
+    actuator_device.reset()
+  File "e:\Desktop\20210721SMAFinger\Code\SMA_FT232\pca9685\PCA9685.py", line 75, in reset
+    print(self.read(__SWRST))
+  File "e:\Desktop\20210721SMAFinger\Code\SMA_FT232\pca9685\PCA9685.py", line 172, in read
+    result = (self.slave.read_from(regaddr = reg,readlen=1))[0]
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\site-packages\pyftdi\i2c.py", line 132, in read_from
+    out=self._make_buffer(regaddr), readlen=readlen, relax=relax)
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\site-packages\pyftdi\i2c.py", line 782, in exchange
+    self._do_prolog(i2caddress)
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\site-packages\pyftdi\i2c.py", line 1032, in _do_prolog
+    self._send_check_ack(cmd)
+  File "C:\Users\51165\AppData\Local\Programs\Python\Python37\lib\site-packages\pyftdi\i2c.py", line 1064, in _send_check_ack
+    raise I2cNackError('NACK from slave')
+pyftdi.i2c.I2cNackError: NACK from slave

@@ -5,7 +5,7 @@
 from audioop import reverse
 import math, time, sys
 
-# PLS follow https://www.ti.com.cn/product/cn/ADS1115
+ # PLS follow https://www.ti.com.cn/product/cn/ADS1115
 
 class TiAds1115_01(object): # TODO
   # Registers/etc. # TODO
@@ -45,7 +45,7 @@ class TiAds1115_01(object): # TODO
     t_start = time.time()
     for _i in range(rounds):
       self.startConversion(is_continue=False,is_show=is_show)
-      self.getConversion(False)
+      self.readSensors(False)
     t_end = time.time()
     print(-t_start+t_end,"S used for", rounds," times of conversion through full iic calling")
     print((-t_start+t_end)/rounds," for AVG")
@@ -53,23 +53,27 @@ class TiAds1115_01(object): # TODO
 
     self.startConversion(is_continue=True,data_rate=1000,is_show=is_show)
     t_start = time.time()
-    for _i in range(rounds): self.getConversion()
+    for _i in range(rounds): self.readSensors(is_show=is_show)
     t_end = time.time()
     print(-t_start+t_end,"S used for", rounds," times of conversion through full iic calling")
     print((-t_start+t_end)/rounds," for AVG")
     return []
 
-  def highSpeedTest(self,rounds=100):
+  def highSpeedTest(self,rounds=100,is_show=False):
     self.startConversion(is_continue=True)
+    # self.startConversion(is_continue=True)
+
+    histroy=[]
     t_start = time.time()
-    for _i in range(rounds): self.getConversion(False)
+    for _i in range(rounds):
+      histroy.append(self.readSensors(is_show))
     t_end = time.time()
     print(-t_start+t_end,"S used for", rounds," times of conversion through full iic calling")
     print((-t_start+t_end)/rounds," for AVG")
 
-    return []
+    return histroy
 
-  def getConversion(self,is_show=False):
+  def readSensors(self,is_show=False):
     _res = []
     _reading =  self.slave.read_from(0x00,readlen=2) 
     _reading = int.from_bytes(_reading, byteorder='big', signed=True) 
@@ -80,17 +84,23 @@ class TiAds1115_01(object): # TODO
   def startConversion(self,data_rate=128,is_continue=False,is_show=False):
     # Mode 8th bit @ addrt 0x01 [15:0]
     _curr_mode =  self.slave.read_from(0x01,readlen=2) 
- 
+    config_regH =_curr_mode[0]; config_regL= _curr_mode[1]
+
     if is_continue: # Continued mode
       _data_rates = ([860,475,250,128,64,32,16,8]);_data_rates.reverse() # SPS
       _codes = [0x7,0x6,0x5,0x4, 0x3,0x2,0x1,0x0];_codes.reverse()
       for _mode,_code in zip(_data_rates,_codes): 
         if _mode >= data_rate: break
-      self.slave.write_to(0x01,out=[ _curr_mode[0]|0x1,(_curr_mode[1]& 0x1F)|_code<<5 ])
+      
+
+      config_regH = _curr_mode[0] & 0b11111110 # MODE -> 0(CONTINUES MODE)
+      config_regL = (_curr_mode[1]& 0x1F)|_code<<5
+
+      self.slave.write_to(0x01,out=[ config_regH ,config_regL ])
+      self.getState(is_show=True)
     else : # Single shot mode
       self.slave.write_to( regaddr=0x01 , out= [_curr_mode[0] | 0x80,_curr_mode[1]])
-      self.getConversion(is_show)
-          
+      self.readSensors(is_show)
     return []
   
   def setRange(self,maxVoltage = 5): # DONE
@@ -190,7 +200,7 @@ class TiAds1115_01(object): # TODO
       if self.debug: print("\tI2C: Device 0x%02X writted 0x%02X to reg 0x%02X" % (self.address, input_value, reg_add))
       return value_after
     return in_value
-    
+  
   
   # NOT READY AREA!!!
 
@@ -226,6 +236,33 @@ class TiAds1115_01(object): # TODO
       For more information on high-speed mode, consult the I2C specification.
     """
 
+class HW526Angle(TiAds1115_01):
+  
+  def __init__(self, i2c_controller,address=0x48,easy_mdoe= True,debug=False,):
+    super(HW526Angle,self).__init__(i2c_controller,address,easy_mdoe,debug)
+    self.calibrationData = []
+    self.loadCalibration()
+    pass
+  
+  def loadCalibration(self):
+    # self.calibrationData = []
+    
+    
+    pass
+
+  def calibrateRange(self,location=[],t_delay=2):
+
+    if len(location) < 2 : print("Location number: ",len(location)," is not enough for calibration"); return []
+    raw_resistance = []
+    for _location in location:
+      # Time delay reqiured here!!!
+      _str = "Please press enter after rotate the actuator into:",_location," degree..." 
+      input(_str)
+      # time.sleep(t_delay)
+      _reading = self.readSensors()
+      raw_resistance.append(_reading) 
+      print(_reading)
+    return raw_resistance
 
 
 if __name__=='__main__': # Test codes # Main process
@@ -245,9 +282,10 @@ if __name__=='__main__': # Test codes # Main process
     i2c_device.configure(url_0,frequency = 1E6)
     # print(i2c_device.frequency, i2c_device.configured )    
 
-    adc_device = TiAds1115_01(i2c_device)
-
-    adc_device.highSpeedTest(100)
+    angle_sensor = HW526Angle(i2c_device)
+    angle_sensor.selfTest(rounds=5,is_show=True)
+    angle_sensor.calibrateRange([90,180,270])
+    # adc_device.highSpeedTest(512,True)
  
 
 

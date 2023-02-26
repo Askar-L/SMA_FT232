@@ -3,27 +3,69 @@
 # * Multi Process version
 # Class of SMA single finger robot 
 # Created by Askar. Liu @ 20221020
-# Modified @20230115
+# Modified @20230221: Add logger
 
-# if __name__=='__main__': # Test codes
-from asyncore import read
 from concurrent.futures import process
-from logging import exception
-import os,sys
-from pickle import TRUE
+import os,sys,time
+
+
+# from pickle import TRUE
 parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0,parentdir)
+from lib.GENERALFUNCTIONS import *
+
+if True: # START LOGGING
+    _f_consle_log =  FIG_FOLDER+time.strftime("_%b%d_%H.%M.%S",time.localtime(RUNTIME))+'.log'
+    f = open(_f_consle_log , 'a')
+    sys.stdout = f
+    sys.stderr = f		# redirect std err, if necessary
 
 import numpy as np
-
 import pyftdi.i2c as i2c
-
 from matplotlib import pyplot as plt
-import time
 
 from lsm6ds3.LSM6DS3 import Lsm6ds3_01 as LSM
 from pca9685.PCA9685 import Pca9685_01 as PCA
-# import PCA9685.pca9685 as PCA9685
+from ads1115.TIADS1115 import TiAds1115_01 as ADS
+
+if True: # Experiment settings
+    
+    VOT = 12 # Vlots
+    LOAD = 10 # Grams
+
+    DUTYS = [0.08,1,0.15,0]# [1,0.2]   # [预热 响应 维持]c
+    INTERVALS =[1,0.1,2,2]# [0.2,1]
+    DO_PLOT = False
+    if DO_PLOT: TIME_OUT = 10000
+    else: TIME_OUT = 30
+
+    # LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
+    LABELS = ['R','Time']
+    EXIT_CHECK_FREQ = 1 #S, EXIT check!
+
+    print('Multi process version of SMA finger')
+    print(time.strftime('%Y:%m:%d %H:%M:%S', time.localtime()))
+    do_plot = DO_PLOT
+    
+
+    act_type = 2
+    act_types = {0:"SMA",1:"TSMA",2:"CTSMA"}
+    
+    print("Expriment data:\n")
+    print("\t act_type:\t",act_types[act_type])
+    
+    print("\t DUTYS:    \t",DUTYS,"%")
+    print("\t INTERVALS:\t",INTERVALS,"Sec")
+
+    print("\t VOT: \t",VOT,"Volts")
+    print("\t LOAD: \t",LOAD,"Grams")
+
+    print("\t DO_PLOT:\t",DO_PLOT)
+    print("\t TIME_OUT:\t",TIME_OUT,"Sec")
+    print("\t LABELS:\t",LABELS)
+    print("\t EXIT_CHECK_FREQ:\t",EXIT_CHECK_FREQ)
+
+    print("\n\n")
 
 class SMAfingerMP_01(object):
 
@@ -72,7 +114,6 @@ class SMAfingerMP_01(object):
     def drive_axis(self,dutyRatio,time):
         # _st = time.time()
         # self.pca_list[0].
-
         pass
 
     def to_angle(self,tar_angle): # 到达目标角度
@@ -95,25 +136,18 @@ class SMAfingerMP_01(object):
             pass
         pass
 
-    def a(self): pass
+# Start of program
 
-# process end here
+# Test settings
 import pyftdi.ftdi as ftdi
 from multiprocessing import  Process
 
-DUTYS =  [1,0.2]   # [预热 响应 维持]c
-INTERVALS = [0.2,1]
-DO_PLOT = False
-if DO_PLOT: TIME_OUT = 10000
-else: TIME_OUT = 10
-FIG_FOLDER = "./IMG/"
-RUNTIME = time.localtime()
-
-LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
-
 def ctrlProcess(i2c_actuator_controller_URL=[],actuator_device=[]): # PCA 
     
-    print("\nCtrlProcess Starts")
+    PROCESSRUNTIME = time.time()
+    print("\nCtrlProcess Starts:",PROCESSRUNTIME)
+    print("OF :",PROCESSRUNTIME- RUNTIME,RUNTIME)
+    
     # Address Setting
     pca_addr = 0x40 # PWM device address
 
@@ -156,8 +190,7 @@ def experiment_0(actuator_device,wire_channles):
 
 def sense_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): # NONE FIFO Version
     lsm_addr = 0x6b # Gryoscope address
-    check_freq = 0.4 #S, EXIT check!
-    check_interval = int(check_freq/0.017)
+    check_interval = int(EXIT_CHECK_FREQ/0.017)
 
     if i2c_sensor_controller_URL==[]: sensor_device = findFtdiDevice(lsm_addr)
     elif sensor_device==[]:
@@ -172,26 +205,26 @@ def sense_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): 
     all_list = [[],[],[],[],[],[],[],[]]
     
     if not isinstance(sensor_device,LSM):print("Programe err! @ sense_LSM6DS3, pls check coding!"); exit()
-    # Empty run for 1 sec
-    t0 =  time.clock()
-    sensor_device.changeRange()
-    while time.clock()-t0 < 0.3: sensor_device.readSensors(1)
+
+    # # Empty run for 1 sec
+    # t0 =  time.clock()
+    # sensor_device.changeRange()
+    # while time.clock()-t0 < 0.3: sensor_device.readSensors(1)
 
     # while run
     _t=0
     continue_sensor = True
     # do_plot=True
-    if do_plot: plt.ion()
-    figsize = (12.8,7.2)#(19.2,10.8)
-    plt.figure(figsize=figsize)
+    if do_plot: 
+        plt.ion()
+        figsize = (12.8,7.2)#(19.2,10.8)
+        plt.figure(figsize=figsize)
 
     data = []
-    t0 =  time.clock()
-    # data.append(sensor_device.readSensors(1)); data[-1].append(t0)
     if do_plot: plot_counter = 0
     while continue_sensor:
         reading = sensor_device.readSensors(1)
-        reading.append(time.clock()-t0)
+        reading.append(time.clock()-RUNTIME)
 
         data.append( reading ) # 0.021474266052246095 S
         # print(reading)
@@ -220,10 +253,9 @@ def sense_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): 
     sensor_device.i2c_controller.close()
     return data
 
-def sense_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
+def sense_LSM_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     lsm_addr = 0x6b # Gryoscope address
-    check_freq = 0.4 #S, EXIT check!
-    check_interval = int(check_freq/0.017)
+    check_interval = int(EXIT_CHECK_FREQ/0.017)
 
     if i2c_sensor_controller_URL==[]:
         sensor_device = findFtdiDevice(lsm_addr)
@@ -236,26 +268,25 @@ def sense_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
     all_list = [[],[],[],[],[],[],[],[]]
     
-    # Empty run for 1 sec
-    t0 =  time.clock()
-    sensor_device.changeRange()
-    while time.clock()-t0 < 0.3: sensor_device.readSensors(1)
+    # # Empty run for 1 sec
+    # t0 =  time.clock()
+    # sensor_device.changeRange()
+    # while time.clock()-t0 < 0.3: sensor_device.readSensors(1)
 
     # while run
     _t=0
     continue_sensor = True
     # do_plot=True
-    if do_plot: plt.ion()
-    figsize = (12.8,7.2)#(19.2,10.8)
-    plt.figure(figsize=figsize)
+    if do_plot: 
+        plt.ion()
+        figsize = (12.8,7.2)#(19.2,10.8)
+        plt.figure(figsize=figsize)
 
     data = []
-    t0 =  time.clock()
-    # data.append(sensor_device.readSensors(1)); data[-1].append(t0)
-
+ 
     while continue_sensor:
         reading = sensor_device.readSensors(1)
-        reading.append(time.clock()-t0)
+        reading.append(time.clock()-RUNTIME)
 
         data.append( reading ) # 0.021474266052246095 S
         # print(reading)
@@ -278,51 +309,85 @@ def sense_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     sensor_device.i2c_controller.close()
     return data
 
-def sensorProcess(i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False): # NONE FIFO Version
+def sense_ADS1115(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): # TODO
 
-    print("\nSensorProcess Starts")
+    ads_addr = 0x48 # ADS1115 address
+    check_interval = int(EXIT_CHECK_FREQ/0.017)
 
-    if DO_PLOT:
-        data = sense_LSM6DS3(i2c_sensor_controller_URL,LSM_device,do_plot)
-    else:
-        data = sense_LSM6DS3(i2c_sensor_controller_URL,LSM_device,do_plot)
-        # data = sense_FIFO(i2c_sensor_controller_URL,do_plot)
-        saveData(data,LABELS)
-        saveFigure(data,LABELS)
-    return []
+    if i2c_sensor_controller_URL==[]: sensor_device = findFtdiDevice(ads_addr)
+    elif sensor_device==[]:
+        print("Configuring device ",str(i2c_sensor_controller_URL)," for experiment")
+        i2c_device = i2c.I2cController()
+        i2c_device.configure(i2c_sensor_controller_URL)
+        sensor_device =ADS(i2c_device)
+        # sensor_device.reset()        
+        
+    # plt.ion()
+    T,A0,A1,A2,A3 = [],[],[],[],[]
+    # axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
 
-def saveData(data,labels):
-    file_url=FIG_FOLDER+ time.strftime("_%b%d_%H.%M",RUNTIME)+str(DUTYS)+str(INTERVALS)  +'.csv'
+    if not isinstance(sensor_device,ADS):print("Programe err! @ sense_ADS1115, pls check coding!"); exit()
 
-    header = str(labels).replace("'",'').replace("]",'').replace("[",'')
+    sensor_device.startConversion(data_rate=100,is_continue=True,is_show=False)
 
-    np.savetxt(file_url,data, fmt='%.18e', delimiter=',', 
-        newline='\n', header=header, footer='', comments='# ', encoding=None)
+    # # Empty run for 1 sec
+    # t0 =  time.clock()
+    # # sensor_device.changeRange()
+    # while time.clock()-t0 < 0.3: sensor_device.readSensors(1)
 
-    pass
+    # while run
+    _t=0
+    continue_senseing = True
+    # do_plot=True
+    if do_plot: 
+        plt.ion()
+        figsize = (12.8,7.2)#(19.2,10.8)
+        plt.figure(figsize=figsize)
 
-def saveFigure(data,labels,show_img=False):
-    data_np = np.array(data)
-    plt.clf() 
-    plt.subplot(2,1,1)
-    for _i in range(3): 
-        i = _i+1
-        plt.plot(data_np[:,-1],data_np[:,i],label = labels[i])
-    plt.legend()
+    data = []
+    if do_plot: plot_counter = 0
+    while continue_senseing:
+        reading = sensor_device.readSensors(is_show=False)
+        reading.append( time.time()- RUNTIME)
 
-    plt.subplot(2,1,2)
-    for _i in range(3): 
-        i = _i+4
-        plt.plot(data_np[:,-1],data_np[:,i],label = labels[i])
-    plt.legend()
+        data.append( reading ) # 0.021474266052246095 S
+        # print(reading)
+
+        if _t % check_interval ==0: 
+           print("\rSensor reading, continued for: ",reading[-1],"s",end='')
+           if reading[-1] > TIME_OUT: 
+            print("\nSensor reading Over due to time out: ",TIME_OUT);continue_senseing = False
+        _t+=1
+
+        if do_plot:
+            plot_counter+=1
+            if plot_counter == 20:
+                plot_counter = 0                
+                data_np = np.array(data)
+
+                plt.clf(); A0.append(_t)
+                for _i in range(data_np.shape[1]-1): 
+                    plt.plot(data_np[:,-1],data_np[:,_i],label = LABELS[_i])
+                plt.pause(0.001);plt.ioff()
+        pass
     
-    file_name = time.strftime("_%b%d_%H.%M",RUNTIME)+str(DUTYS)+str(INTERVALS)  +'.pdf'
-    print("Figure saving as: ",FIG_FOLDER+file_name)
-    # plt.margins(0,0)
-    plt.savefig(FIG_FOLDER+file_name,dpi=1000,bbox_inches = 'tight',pad_inches=0.1)
+    sensor_device.i2c_controller.close()
+    return data
 
-    if show_img: plt.show()
- 
+def sensorProcess(i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False): # NONE FIFO Version
+    PROCESSRUNTIME = time.time()
+
+    print("\nSensorProcess Starts:",PROCESSRUNTIME)
+    print("OF:",PROCESSRUNTIME-RUNTIME,RUNTIME)
+
+    data = sense_ADS1115(i2c_sensor_controller_URL,[],do_plot)
+    # data = sense_LSM6DS3(i2c_sensor_controller_URL,LSM_device,do_plot)
+    # data = sense_FIFO(i2c_sensor_controller_URL,do_plot)
+    file_name = time.strftime("_%b%d_%H.%M",time.localtime(RUNTIME))+str(DUTYS)+str(INTERVALS)
+
+    saveData(data,file_name,LABELS)
+    saveFigure(data,file_name,LABELS)
+
 def findFtdiDevice(addr): # find corresbonding device 
     url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1')  # ftdi://ftdi:232h:0/1
     url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1') 
@@ -428,46 +493,36 @@ def i2c_test():
     return []
 
 if __name__=='__main__': # Test codes # Main process
-    print("\n\n")
-    print('Multi process version of SMA finger')
-    print(time.strftime('%Y:%m:%d %H:%M:%S', time.localtime()))
-    do_plot = DO_PLOT
- 
+
+
+    # Log experiment details
+        # console recoder
+
+        # data logger
+
+        # expriment setting log
+
+    # Start of IIC comunication
     url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1') 
     url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1')
 
-    # url_PCA,url_LSM,PCA_device,LSM_device = findFtdiAddr()
-    url_PCA = url_0
-    url_LSM = url_1
+    # MP on
+    print("SMA Finger MultiProcess: \nTwo thread with Python threading library")
+         # url_PCA,url_LSM,PCA_device,LSM_device = findFtdiAddr()
 
-    if url_PCA==[] or url_LSM==[]:
-        print("Failed on finding PCA or LSM device addr:",url_PCA,url_LSM); exit()
-    else : print("Found PCA, LSM device @:",url_PCA,url_LSM) 
+    case = 1
+    if case == 1: url_Control = url_1; url_Sensor = url_0
+    else: url_Control = url_0; url_Sensor = url_1
 
-    process_ctrl = Process(target= ctrlProcess,args=(url_PCA,[]))
-    process_sensor = Process(target= sensorProcess, args=(url_LSM,[],do_plot))
-    
-    # print(url_PCA,url_LSM);exit()
-    # case = 1
     # # i2c_device_0,i2c_device_1 = test_dual_ftdi()
-
-    # # MP on
-    # print("Two thread with Python threading library")
-    # if case == 1:
-    #     process_ctrl = Process(target= ctrlProcess,args=(url_0,))
-    #     process_sensor = Process(target= sensorProcess, args=(url_1,do_plot))
-    # else:
-    #     process_ctrl = Process(target= ctrlProcess,args=(url_1,))
-    #     process_sensor = Process(target= sensorProcess, args=(url_0,do_plot))
+    if url_Control==[] or url_Sensor==[]:
+        print("Failed on finding USB FT232H device addr:",url_Control,url_Sensor); exit()
+    else : print("Found USB FT232H device @:",url_Control,url_Sensor) 
 
 
-    process_sensor.start(); time.sleep(1)
+    process_ctrl = Process(target= ctrlProcess,args=(url_Control,[]))
+    process_sensor = Process(target= sensorProcess, args=(url_Sensor,[],do_plot))
+
+
+    process_sensor.start()
     process_ctrl.start()
-
-    # process_sensor.join();time.sleep(1)
-    
-    # process_ctrl.join()
-
-    
-    # exit()
-    # finger = SMAfingerMP_01()
