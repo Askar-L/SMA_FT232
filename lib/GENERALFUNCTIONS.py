@@ -11,6 +11,9 @@ from typing import Any, Iterable, Mapping, Optional, Tuple, Union
 
 RUNTIME = time.time()
 FIG_FOLDER = "./IMG/"
+DATA_FOLDER = "./IMG/"
+FIG_SIZE = (12.8,8.00)#(19.2,10.8)
+FONTSIZE = 18
 
 def saveData(data,file_name,labels,f_type:str="csv",**kwargs: Mapping[str, Any]):
  
@@ -30,20 +33,45 @@ def saveFigure(data,file_name,labels,show_img=False,**kwargs: Mapping[str, Any])
     data_np = np.array(data)
     data_size = data_np.shape
     print("Saving figure for sampled data:",data_size)
-    plt.clf() 
+        
+    figsize=FIG_SIZE
+    if not data_size[1] >3 : 
+        figsize = (FIG_SIZE[1]*2.35,FIG_SIZE[1])
+ 
+    plt.rcParams.update({'font.size': FONTSIZE}) # 改变所有字体大小，改变其他性质类似
 
-    if data_size[1] >3 : # Muti-Dim(a,b,...,t)
-        plt.subplot(2,1,1)
+    plt.figure(figsize=figsize)
+    plt.clf()
+    # plt.xticks(fontsize=FONTSIZE)
+    # plt.yticks(fontsize=FONTSIZE)
+
+    # # 设置坐标标签字体大小
+    # ax.set_xlabel( fontsize=FONTSIZE)
+    # ax.set_ylabel( fontsize=FONTSIZE)
+    # ax.legend(fontsize=FONTSIZE)
+
+
+    if data_size[1] > 3 : # Muti-Dim(a,b,...,t)
+        ax = plt.subplot(211)
+        # plt.xticks(fontsize=FONTSIZE); plt.yticks(fontsize=FONTSIZE)
+        # ax.legend(fontsize=FONTSIZE)
+        
         for _i in range(3): i = _i+1; plt.plot(data_np[:,-1],data_np[:,i],label = labels[i])
-        plt.legend()
-
-        plt.subplot(2,1,2)
+        plt.legend(loc='upper center', ncol=3,frameon=False,shadow=False,framealpha=0)
+        
+        ax = plt.subplot(212)
+        # plt.xticks(fontsize=FONTSIZE); plt.yticks(fontsize=FONTSIZE)
         for _i in range(3): i = _i+4; plt.plot(data_np[:,-1],data_np[:,i],label = labels[i])
-        plt.legend()
+        # ax.legend(fontsize=FONTSIZE)
+        plt.legend(loc='upper center', ncol=3,frameon=False,shadow=False,framealpha=0)
+
+
     else:
         # One dim (x,t)
-        plt.plot(data_np[:,-1],data_np[:,0])
-        # for _i in range(data_size[1]): plt.plot(data_np[:,-1],data_np[:,_i],label = labels[_i])
+        ax = plt.subplot(111)
+        plt.plot(data_np[:,-1],data_np[:,0],label =labels[0])
+        plt.legend()
+
 
     f_type = "pdf"
     if f_type not in file_name: file_url= FIG_FOLDER+ file_name  +'.' + f_type
@@ -53,7 +81,6 @@ def saveFigure(data,file_name,labels,show_img=False,**kwargs: Mapping[str, Any])
     print("Figure saving as: ",FIG_FOLDER+file_name)
     # plt.margins(0,0)
     plt.savefig(file_url, dpi=1000,bbox_inches = 'tight',pad_inches=0.1)
-
     if show_img: plt.show()
     
     return file_url

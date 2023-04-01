@@ -11,12 +11,23 @@ if __name__=='__main__':
   # Instantiate an I2C controller
   IIC_device = i2c.I2cController()
   # Configure the first interface (IF/1) of the FTDI device as an I2C master
-  IIC_device.configure('ftdi://ftdi:232h:0/1') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+  IIC_device.configure('ftdi://ftdi:232h:0:FF/0') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
 
   print('\n\n')
   pwm_addr = 0x40
-  pca9685 = PCA9685(IIC_device,debug=False,easy_mdoe=True)
-  pca9685.reset()
+  pca9685 = PCA9685(IIC_device,debug=True,easy_mdoe=True)
+  # pca9685.reset()
+
+  pca9685.setPWMFreq(1526)
+  pca9685.setDutyRatioCH(4,1)
+  pca9685.setDutyRatioCH(0,1)
+
+  time.sleep(400000)
+  pca9685.setDutyRatioCH(0,0)
+  pca9685.setDutyRatioCH(4,0)
+  # pca9685.test_wires([4,12,0],[0],[0.1])
+  # pca9685.test_wires([4,12,0],[1,0],[20,0.1])
+  # 
 
   exit()
 

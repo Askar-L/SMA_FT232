@@ -32,6 +32,7 @@ class Lsm6ds3_01:
   __FIFO_STATUS2 = 0x3B
     
   def __init__(self,i2c_controller,address=0x6b, debug=False):
+    self.init_time = time.time()
     print("Creating New LSM6DS3 IIC slave :",hex(address))
     self.i2c_controller = i2c_controller
     self.address = address
@@ -42,8 +43,15 @@ class Lsm6ds3_01:
     self.Regs_Angular_acc = [0X22,0X24,0X26] # [X,Y,Yew]_Low
     self.Regs_Linear_acc = [0X28,0X2A,0X2C] # [X,Y,Z]_Low
     self.Regs_Temp = [0X20] # [Temp_Low]
-    self.reset()
-    self.changeRange()
+    # self.reset()
+    
+    self.range_AR = 1000
+    self.range_LA = 2
+    
+    # time.sleep(1)
+    # wait=time.time()
+    # while time.time()-self.init_time < 1: self.readSensors(1)
+    # self.changeRange()
     # FIFO Bypass mode    # ...
 
     # Accelerometer / gyroscope mode controls
@@ -66,29 +74,45 @@ class Lsm6ds3_01:
     res = self.slave.read_from(regaddr = reg_addr,readlen=1)[0]
     return res
   
-  def changeRange(self,rangeLA = 8,rangeAR = 2000): # Changing the scale/range of sensors @221017
+  def setRange(self,rangeLA = 8,rangeAR = 1000): # Changing the scale/range of sensors @221017
     
-    FS_G = {245:'00',500:'01',1000:'10',2000:'11'}
-    self.range_AR = rangeAR
-    AR_mode = int('1000'+FS_G[rangeAR]+'00',2)
-    if rangeAR == 125: AR_mode = int('1000'+'00'+'10',2)
-    self.slave.write_to(self.__CTRL1_XL+1,bytearray([AR_mode]))
+    # Who_Am_I = self.slave.read_from(regaddr = self.__WHO_AM_I,readlen=1)[0]
+    # print("Who_Am_I:",Who_Am_I)
+
+    # self.__CTRL4_C = 0x13
+    # __CTRL4_C_ori = self.slave.read_from(regaddr = self.__CTRL4_C,readlen=1)[0]
+    # __CTRL4_C_new = __CTRL4_C_ori 
+
+    LA_mode_ori = self.slave.read_from(regaddr = self.__CTRL1_XL,readlen=1)[0]
+    AR_mode_ori = self.readReg(self.__CTRL2_G)
 
     FX_XL = {2:'00',16:'01',4:'10',8:'11'}
     self.range_LA = rangeLA
     # ctrl1_FS_XL = FX_XL[self.range_LA]
     LA_mode = int('1010'+FX_XL[rangeLA]+'00',2)
-    self.slave.write_to(self.__CTRL1_XL,bytearray([LA_mode]))
+    self.slave.write_to(self.__CTRL1_XL ,bytearray([LA_mode]))
+    print("__CTRL1_XL Old/Tar/New reg val:",LA_mode_ori, LA_mode ,self.readReg(self.__CTRL1_XL))
+
+
+    
+    FS_G = {245:'00',500:'01',1000:'10',2000:'11'}
+    self.range_AR = rangeAR
+    AR_mode = int('1000'+FS_G[rangeAR]+'00',2)
+    if rangeAR == 125: AR_mode = int('1000'+'00'+'10',2)
+    self.slave.write_to(self.__CTRL2_G ,bytearray([AR_mode]))
+    print("__CTRL2_G Old/Tar/New reg val:",AR_mode_ori, AR_mode ,self.readReg(self.__CTRL2_G))
+
+    # mode check
+
+
 
     pass
   
   def reset(self):  
     self.writeReg(self.__CTRL3_C,0b00000101)
-    
     # Test who am I
     if not self.readReg(self.__WHO_AM_I)-0x69 ==0 : print("Who am I test failed!"); exit()
 
-    
     # print("Default values: ")
     # print('__CTRL1_XL: ',self.readReg(self.__CTRL1_XL))
     # print('__CTRL6_C XL_HM_MODE: ',self.readReg(self.__CTRL6_C))
@@ -102,20 +126,22 @@ class Lsm6ds3_01:
     # print('\tNow\t: ',self.readReg(self.__CTRL9_XL))
 
     # Setting __CTRL1_XL: Linear Acceleration sensor setting
-    # Default 0x00
-    LA_mode = '1010' # OutDataRate 1010 High performance @ 6.66kHz
-    LA_mode+= '00'   # FS  11 for +-8g; 00 for +-2g
-    LA_mode+= '00'   # BW  Anti-aliasing 
-    LA_mode = int(LA_mode,2)
-
-    # print("\n__CTRL1_XL \n\tDefault\t: ",0x00,"\t New",AG_mode)
-    self.slave.write_to(self.__CTRL1_XL,bytearray([LA_mode]))
-    # self.writeReg(self.__CTRL1_XL,AG_mode)
-    # print('\tNow\t: ',self.readReg(self.__CTRL1_XL))
     
-    # Enable __CTRL2_G: Angular rate sensor setting
-    AR_mode = int('1000' + '10'+'0' + '0',2)
-    self.slave.write_to(self.__CTRL2_G,bytearray([AR_mode]))
+    # Default 0x00
+    # LA_mode = '1010' # OutDataRate 1010 High performance @ 6.66kHz
+    # LA_mode+= '00'   # FS  11 for +-8g; 00 for +-2g
+    # LA_mode+= '00'   # BW  Anti-aliasing 
+    # LA_mode = int(LA_mode,2)
+
+    # # print("\n__CTRL1_XL \n\tDefault\t: ",0x00,"\t New",AG_mode)
+    # self.slave.write_to(self.__CTRL1_XL,bytearray([LA_mode]))
+    # # self.writeReg(self.__CTRL1_XL,AG_mode)
+    # # print('\tNow\t: ',self.readReg(self.__CTRL1_XL))
+    
+    # # Enable __CTRL2_G: Angular rate sensor setting
+    # AR_mode = int('1000' + '10'+'0' + '0',2)
+    # self.slave.write_to(self.__CTRL2_G,bytearray([AR_mode]))
+    self.setRange()
  
   def readWord(self,reg_L):
     b16 = self.slave.read_from(regaddr = reg_L,readlen=2)
@@ -141,19 +167,21 @@ class Lsm6ds3_01:
     return acc_int
 
   def readSensors(self,return_mode=1):
-    _data = self.readHighSpeed()
-    # print(_data)
-    _data = [_/32767 for _ in _data] # To (-1,1)
-
-    _data[4:7] = [ _*self.range_LA for _ in _data[4:7] ] # LA_reading
-    _data[1:4] = [ _*self.range_AR for _ in _data[1:4] ] # AR_reading
-    if return_mode==1:return _data
-
-    temp = _data[0]
-    LA_reading = _data[4:7]
-    AR_reading = _data[1:4]
-    return temp,LA_reading,AR_reading
+    data = self.readHighSpeed()
     
+    # AR_reading= [ _*self.range_AR/2**15 for _ in data[1:3] ] # AR_reading
+    # LA_reading = [ _*self.range_LA/2**15 for _ in data[4:6] ] # LA_reading
+    # temp = data[0]
+    # # LA_reading = _data[4:6]
+    # # AR_reading = _data[1:3]
+    # return [temp,LA_reading,AR_reading]
+
+    # print("Ranges:",self.range_AR,self.range_LA)
+    output = data
+    output[1:4] = [ _*self.range_AR/32767 for _ in data[1:4] ] # AR_reading
+    output[4:7] =[ _*self.range_LA/32767 for _ in data[4:7] ] # LA_reading
+
+    return output # To (-1,1) /(2^15)
 
   def readHighSpeed(self,start_addr=0,len_load = 7): # 
     if start_addr + len_load > 7:
@@ -161,26 +189,27 @@ class Lsm6ds3_01:
     
     start_addr += self.__OUT_TEMP_L
     retry_load_max = 5
-    hex_raw = self.slave.read_from(start_addr,len_load*2)   
+    _raw = self.slave.read_from(start_addr,len_load*2)   
     
-    while not len(hex_raw) == len_load*2: # Retry loading
+    while not len(_raw) == len_load*2: # Retry loading
       retry_load_max -= 1
       if retry_load_max <= 0: 
         print("Failed when loading:",len_load,"*2 bytes data.");return []
-      hex_raw = self.slave.read_from(start_addr,len_load*2)
+      _raw = self.slave.read_from(start_addr,len_load*2)
 
     if not retry_load_max == 5: print("\n\nAlert!: lsm6ds3.readHighSpeed() retired ",5-retry_load_max,'times.')
 
-    i = 0; output = []
-    for _byte in hex_raw: # Decode to dec
-      if i%2 == 1: # 偶数项 H 高位
-        output[-1] += (_byte<<8)
-        if (_byte >>7) ==1:  output[-1] -= (1<<16) 
-      else: output.append(_byte)
+    i = 0; word_data = []
+    for _byte in _raw: # Decode to dec
+
+      if i%2 == 0: # 先手 低位 0,2,4,6,8,10,12,14
+        word_data.append(_byte)      
+      else:         # 高位 1,3,5,7,9,11,13
+        word_data[-1] += (_byte<<8)
+        if _byte >>7:  word_data[-1] -= (1<<16) 
       i += 1
 
-    # print('output',output)
-    return output
+    return word_data
 
   def temp(self): return self.readWord(self.__OUT_TEMP_L) # self.__OUT_TEMP_L
 

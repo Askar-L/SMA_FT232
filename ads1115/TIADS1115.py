@@ -3,7 +3,10 @@
 
 
 from audioop import reverse
-import math, time, sys
+import math, time, sys , json
+
+import numpy
+from lib.GENERALFUNCTIONS import *
 
  # PLS follow https://www.ti.com.cn/product/cn/ADS1115
 
@@ -14,7 +17,8 @@ class TiAds1115_01(object): # TODO
   
   def __init__(self, i2c_controller,address=0x48,easy_mdoe= True,debug=False,): # TODO
     print("Creating New Ti Ads1115_01 I2C slave :",hex(address))
-    
+    self.init_time = time.time()
+
     self.i2c_controller = i2c_controller
 
     # Get a port to an I2C slave device
@@ -23,18 +27,14 @@ class TiAds1115_01(object): # TODO
 
     self.address = address
     self.debug = debug
-    # self.osc_clock = 25000000.0
-    self.easy_mdoe = easy_mdoe
  
-    self.print_value = False
-
     if (self.debug): 
       # # TODO
       # print("Reseting PCA9685: ",'%#x'%self.address )
       # print("Initial Mode_1 reg value: ",'%#x'%self.read(self.__MODE1))
       pass
     print("Ti Ads1115 Device created! initial state:",self.getState(is_show=True))
-   
+       
     self.setRange()
     pass
 
@@ -237,32 +237,77 @@ class TiAds1115_01(object): # TODO
     """
 
 class HW526Angle(TiAds1115_01):
-  
-  def __init__(self, i2c_controller,address=0x48,easy_mdoe= True,debug=False,):
+
+  def __init__(self, i2c_controller,address=0x48,easy_mdoe= True,debug=False,name=[]):
+    # from lib.GENERALFUNCTIONS import *
     super(HW526Angle,self).__init__(i2c_controller,address,easy_mdoe,debug)
     self.calibrationData = []
+    self.name = name
+    print(FIG_FOLDER)
+    self.calib_file_url = DATA_FOLDER + name + ".json"
     self.loadCalibration()
     pass
   
-  def loadCalibration(self):
-    # self.calibrationData = []
-    
-    
-    pass
+  def loadCalibration(self,):
+    print("Loading calibration data from:",self.calib_file_url)
+    try:
+      # JSON到字典转化
+      _cali_file = open(self.calib_file_url, 'r')
+      _cali_data = json.load(_cali_file)
+      print(type(_cali_data),_cali_data)
+      self.model_k = _cali_data["a1"]
+      self.model_b = _cali_data["a0"]
+      if len(_cali_data) ==0: raise Exception("")        
+      else: print("\tSuccessfully load calibration data!:",self.model_k,self.model_b,"\n")
 
-  def calibrateRange(self,location=[],t_delay=2):
+    except Exception as Err: 
+      print("\tErr occurs when loading calibration json file, Please calibrate angle sensor: ",self.name)
+      self.calibrateRange()
+ 
 
-    if len(location) < 2 : print("Location number: ",len(location)," is not enough for calibration"); return []
-    raw_resistance = []
-    for _location in location:
+  def calibrateRange(self,angles=[90,270],t_delay=2):
+    print("Calibration starts, ",len(angles)," angles reqiured")
+    if len(angles) < 2 : print("Location number: ",len(angles)," is not enough for calibration"); return []
+    raw_R = []
+
+    for _location in angles:
       # Time delay reqiured here!!!
-      _str = "Please press enter after rotate the actuator into:",_location," degree..." 
+      _str = "\t Press enter after rotate the actuator into:\t"+str(_location)+" degree..." 
       input(_str)
-      # time.sleep(t_delay)
-      _reading = self.readSensors()
-      raw_resistance.append(_reading) 
-      print(_reading)
-    return raw_resistance
+      _reading = super(HW526Angle,self).readSensors() # self.readSensors()
+      raw_R.append(_reading) 
+      print("\t",_reading)
+
+    # Cal calibration ?
+    if len(angles) == 2:
+      # x = self.readSensors()
+      raw_R = numpy.array(raw_R)
+      angles = numpy.array(angles)
+
+      k = float( (angles[0]-angles[1])/ (raw_R[0]-raw_R[1]) )
+      b = float(angles[0] - k*raw_R[0])
+      print("Sensor outputs model: angle =",k,"x + ",b)
+      model = {"a0":b,"a1":k} 
+      # y = (raw_R[0]-raw_R[1])*(x -xs[0])/(xs[1]-xs[0]) + raw_R[1]
+
+    # Save Raw Data and model
+    info_json = json.dumps(model,sort_keys=False, indent=4, separators=(',', ': '))
+    f = open(self.calib_file_url, 'w')
+    f.write(info_json)
+    
+    self.model_b = b
+    self.model_k = k
+    return raw_R
+
+
+  def readSensors(self,is_show=False):
+    _reading = super(HW526Angle,self).readSensors(is_show) 
+    res = []
+    for _res in _reading:
+      res.append( _res * self.model_k + self.model_b)
+    return res
+
+
 
 
 if __name__=='__main__': # Test codes # Main process
@@ -272,7 +317,8 @@ if __name__=='__main__': # Test codes # Main process
 
     import pyftdi.i2c as i2c
     # from pyftdimod import i2c as i2c
-    
+    from lib.GENERALFUNCTIONS import *
+
     print("\n\n")
     print('Testing TI ADS115     at',time.strftime('%Y:%m:%d %H:%M:%S', time.localtime()),"")
     
@@ -282,10 +328,16 @@ if __name__=='__main__': # Test codes # Main process
     i2c_device.configure(url_0,frequency = 1E6)
     # print(i2c_device.frequency, i2c_device.configured )    
 
-    angle_sensor = HW526Angle(i2c_device)
-    angle_sensor.selfTest(rounds=5,is_show=True)
-    angle_sensor.calibrateRange([90,180,270])
-    # adc_device.highSpeedTest(512,True)
+    angle_sensor_01 = HW526Angle(i2c_device,name="angle_sensor_01")
+    print("\n\n\n")
+    # angle_sensor_01.selfTest(rounds=5,is_show=True)
+
+    
+    angle_sensor_01.highSpeedTest(512,True)
+    t0 = time.time()
+    while time.time()-t0 < 5: print(angle_sensor_01.readSensors())
+
+
  
 
 

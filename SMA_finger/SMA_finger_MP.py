@@ -26,21 +26,27 @@ from matplotlib import pyplot as plt
 
 from lsm6ds3.LSM6DS3 import Lsm6ds3_01 as LSM
 from pca9685.PCA9685 import Pca9685_01 as PCA
-from ads1115.TIADS1115 import TiAds1115_01 as ADS
+from ads1115.TIADS1115 import HW526Angle as ANGLESENSOR
 
 if True: # Experiment settings
     
     VOT = 12 # Vlots
     LOAD = 10 # Grams
 
-    DUTYS = [0.08,1,0.15,0]# [1,0.2]   # [预热 响应 维持]c
-    INTERVALS =[1,0.1,2,2]# [0.2,1]
+    # Main derections
+    DUTYS_P = [0.09,1,0.2,0.14,0.1,0]# [1,0.2]   # [预热 响应 维持]c 
+    INTERVALS_P =[1,0.3,2,2,2,2]# [0.2,1]
+
+    # Reversed derections
+    DUTYS_M = [1,0.3,0]# [1,0.2]   # [预热 响应 维持]c
+    INTERVALS_M =[0.2,2,0.1]# [0.2,1]
+
     DO_PLOT = False
     if DO_PLOT: TIME_OUT = 10000
-    else: TIME_OUT = 30
+    else: TIME_OUT = 13
 
-    # LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
-    LABELS = ['R','Time']
+    LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
+    # LABELS = ['R','Time']
     EXIT_CHECK_FREQ = 1 #S, EXIT check!
 
     print('Multi process version of SMA finger')
@@ -54,8 +60,8 @@ if True: # Experiment settings
     print("Expriment data:\n")
     print("\t act_type:\t",act_types[act_type])
     
-    print("\t DUTYS:    \t",DUTYS,"%")
-    print("\t INTERVALS:\t",INTERVALS,"Sec")
+    print("\t DUTYS:    \t",DUTYS_P,"%")
+    print("\t INTERVALS:\t",INTERVALS_P,"Sec")
 
     print("\t VOT: \t",VOT,"Volts")
     print("\t LOAD: \t",LOAD,"Grams")
@@ -142,7 +148,7 @@ class SMAfingerMP_01(object):
 import pyftdi.ftdi as ftdi
 from multiprocessing import  Process
 
-def ctrlProcess(i2c_actuator_controller_URL=[],actuator_device=[]): # PCA 
+def ctrlProcess(i2c_actuator_controller_URL=[]): # PCA 
     
     PROCESSRUNTIME = time.time()
     print("\nCtrlProcess Starts:",PROCESSRUNTIME)
@@ -151,14 +157,15 @@ def ctrlProcess(i2c_actuator_controller_URL=[],actuator_device=[]): # PCA
     # Address Setting
     pca_addr = 0x40 # PWM device address
 
-    wire_freq = 1000 # PWM freq for wire controling
-    wire_channles = [12,14,0] # [Wire 1; Wire 2;Indicating LED]
+    wire_freq = 1526 # PWM freq for wire controling
+    # wire_channles = [12,0] # [Wire 1; Wire 2;Indicating LED]
 
     # # Instantiate an I2C controller
     # i2c_actuator_controller = i2c.I2cController() # Create 
     # # Open port
     # i2c_actuator_controller.configure(i2c_url)
-
+    actuator_device=[]
+ 
     # actuator_device = PCA(i2c_actuator_controller,pca_addr,debug=False); actuator_device.reset()
     if i2c_actuator_controller_URL==[]:
         print('Empty input of i2c_actuator_controller_URL, finding URL')
@@ -175,20 +182,38 @@ def ctrlProcess(i2c_actuator_controller_URL=[],actuator_device=[]): # PCA
     
     # dutys = [0.1] # [预热 响应 维持]
     # intervals = [1]
-    # actuator_device.test_wires(wire_channles,dutys,intervals,conf0=True)
+    # actuator_device.test_wires([12,0],dutys,intervals,conf0=True)
     
     # experiment
-    experiment_0(actuator_device,wire_channles)
+    # experment_fan(actuator_device)
+    # experiment_0(actuator_device,[12,0])
+    experiment_1(actuator_device)
+
+    
     actuator_device.i2c_controller.close()
     pass
 
+def experment_fan(actuator_device):
+    dutys = [1,0.3,0] # [预热 响应 维持]
+    intervals = [0.4,8,0.1]
+    actuator_device.test_wires([6,12,0],dutys,intervals,conf0=True)
+
 def experiment_0(actuator_device,wire_channles):
-    dutys = DUTYS # [预热 响应 维持]
-    intervals = INTERVALS
+    dutys = DUTYS_P # [预热 响应 维持]
+    intervals = INTERVALS_P
     actuator_device.test_wires(wire_channles,dutys,intervals,conf0=True)
     pass
 
-def sense_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): # NONE FIFO Version
+def experiment_1(actuator_device):
+    wire_channles = [4,0]
+    actuator_device.test_wires(wire_channles,DUTYS_P,INTERVALS_P,conf0=True)
+    
+    wire_channles = [6,0]
+    actuator_device.test_wires(wire_channles,DUTYS_M,INTERVALS_M,conf0=True)
+
+    pass
+
+def sensor_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): # NONE FIFO Version
     lsm_addr = 0x6b # Gryoscope address
     check_interval = int(EXIT_CHECK_FREQ/0.017)
 
@@ -199,6 +224,7 @@ def sense_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): 
         i2c_device.configure(i2c_sensor_controller_URL)
         sensor_device =LSM(i2c_device)
         sensor_device.reset()        
+        sensor_device.setRange()
         
     # plt.ion()
     axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
@@ -208,7 +234,6 @@ def sense_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): 
 
     # # Empty run for 1 sec
     # t0 =  time.clock()
-    # sensor_device.changeRange()
     # while time.clock()-t0 < 0.3: sensor_device.readSensors(1)
 
     # while run
@@ -224,7 +249,7 @@ def sense_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): 
     if do_plot: plot_counter = 0
     while continue_sensor:
         reading = sensor_device.readSensors(1)
-        reading.append(time.clock()-RUNTIME)
+        reading.append(time.time()-RUNTIME)
 
         data.append( reading ) # 0.021474266052246095 S
         # print(reading)
@@ -270,7 +295,6 @@ def sense_LSM_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     
     # # Empty run for 1 sec
     # t0 =  time.clock()
-    # sensor_device.changeRange()
     # while time.clock()-t0 < 0.3: sensor_device.readSensors(1)
 
     # while run
@@ -285,7 +309,7 @@ def sense_LSM_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     data = []
  
     while continue_sensor:
-        reading = sensor_device.readSensors(1)
+        reading = sensor_device.readSensors(0)
         reading.append(time.clock()-RUNTIME)
 
         data.append( reading ) # 0.021474266052246095 S
@@ -309,30 +333,29 @@ def sense_LSM_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     sensor_device.i2c_controller.close()
     return data
 
-def sense_ADS1115(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): # TODO
+def sense_ADS1115(i2c_sensor_controller_URL=[],angle_sensor_01=[],do_plot=False): # TODO
 
     ads_addr = 0x48 # ADS1115 address
     check_interval = int(EXIT_CHECK_FREQ/0.017)
 
-    if i2c_sensor_controller_URL==[]: sensor_device = findFtdiDevice(ads_addr)
-    elif sensor_device==[]:
+    if i2c_sensor_controller_URL==[]: angle_sensor_01 = findFtdiDevice(ads_addr)
+    elif angle_sensor_01==[]:
         print("Configuring device ",str(i2c_sensor_controller_URL)," for experiment")
         i2c_device = i2c.I2cController()
         i2c_device.configure(i2c_sensor_controller_URL)
-        sensor_device =ADS(i2c_device)
+        angle_sensor_01 =ANGLESENSOR(i2c_device,name="angle_sensor_01")
         # sensor_device.reset()        
         
     # plt.ion()
     T,A0,A1,A2,A3 = [],[],[],[],[]
     # axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
 
-    if not isinstance(sensor_device,ADS):print("Programe err! @ sense_ADS1115, pls check coding!"); exit()
+    if not isinstance(angle_sensor_01,ANGLESENSOR):print("Programe err! @ sense_ADS1115, pls check coding!"); exit()
 
-    sensor_device.startConversion(data_rate=100,is_continue=True,is_show=False)
+    angle_sensor_01.startConversion(data_rate=100,is_continue=True,is_show=False)
 
     # # Empty run for 1 sec
     # t0 =  time.clock()
-    # # sensor_device.changeRange()
     # while time.clock()-t0 < 0.3: sensor_device.readSensors(1)
 
     # while run
@@ -347,7 +370,7 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): 
     data = []
     if do_plot: plot_counter = 0
     while continue_senseing:
-        reading = sensor_device.readSensors(is_show=False)
+        reading = angle_sensor_01.readSensors(is_show=False)
         reading.append( time.time()- RUNTIME)
 
         data.append( reading ) # 0.021474266052246095 S
@@ -371,19 +394,26 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): 
                 plt.pause(0.001);plt.ioff()
         pass
     
-    sensor_device.i2c_controller.close()
+    angle_sensor_01.i2c_controller.close()
     return data
 
-def sensorProcess(i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False): # NONE FIFO Version
+def sensorProcess(mode="ADC",i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False): # NONE FIFO Version
     PROCESSRUNTIME = time.time()
 
-    print("\nSensorProcess Starts:",PROCESSRUNTIME)
+    print("\nSensorProcess Starts:",PROCESSRUNTIME,"With sensor: ",mode)
     print("OF:",PROCESSRUNTIME-RUNTIME,RUNTIME)
 
-    data = sense_ADS1115(i2c_sensor_controller_URL,[],do_plot)
+    if mode =="ADC": 
+        LABELS = ['Joint Angle','Time']
+        data = sense_ADS1115(i2c_sensor_controller_URL,[],do_plot)
+
+    elif mode =="IMU": 
+        LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
+        data = sensor_LSM6DS3(i2c_sensor_controller_URL,LSM_device,do_plot)
+        
     # data = sense_LSM6DS3(i2c_sensor_controller_URL,LSM_device,do_plot)
     # data = sense_FIFO(i2c_sensor_controller_URL,do_plot)
-    file_name = time.strftime("_%b%d_%H.%M",time.localtime(RUNTIME))+str(DUTYS)+str(INTERVALS)
+    file_name = mode+time.strftime("_%b%d_%H.%M",time.localtime(RUNTIME))+str(DUTYS_P)+str(INTERVALS_P)
 
     saveData(data,file_name,LABELS)
     saveFigure(data,file_name,LABELS)
@@ -494,7 +524,6 @@ def i2c_test():
 
 if __name__=='__main__': # Test codes # Main process
 
-
     # Log experiment details
         # console recoder
 
@@ -503,14 +532,15 @@ if __name__=='__main__': # Test codes # Main process
         # expriment setting log
 
     # Start of IIC comunication
-    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1') 
-    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1')
+    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0') 
+    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/0')
+    url_2 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FD/1')
 
     # MP on
     print("SMA Finger MultiProcess: \nTwo thread with Python threading library")
          # url_PCA,url_LSM,PCA_device,LSM_device = findFtdiAddr()
 
-    case = 1
+    case = 0
     if case == 1: url_Control = url_1; url_Sensor = url_0
     else: url_Control = url_0; url_Sensor = url_1
 
@@ -520,9 +550,18 @@ if __name__=='__main__': # Test codes # Main process
     else : print("Found USB FT232H device @:",url_Control,url_Sensor) 
 
 
-    process_ctrl = Process(target= ctrlProcess,args=(url_Control,[]))
-    process_sensor = Process(target= sensorProcess, args=(url_Sensor,[],do_plot))
+
+    process_sensor_IMU = Process( target= sensorProcess, args=("IMU",url_2,[],do_plot))
+    process_sensor_ADC = Process( target= sensorProcess, args=("ADC",url_Sensor,[],do_plot))
+    
+    process_ctrl = Process(target= ctrlProcess,args=(url_Control,))
+    
 
 
-    process_sensor.start()
+    process_sensor_ADC.start()
+    process_sensor_IMU.start()
+    # time.sleep(1)
     process_ctrl.start()
+
+
+

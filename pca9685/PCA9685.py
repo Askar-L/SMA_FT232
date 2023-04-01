@@ -43,8 +43,6 @@ class Pca9685_01(object):
     # self.dutyratioList = [0 for _ in range(10)]
     # self.onoffList = [0 for _ in range(10)]
 
-    self.print_value = False
-
     if (self.debug): 
       print("Reseting PCA9685: ",'%#x'%self.address )
       print("Initial Mode_1 reg value: ",'%#x'%self.read(self.__MODE1))
@@ -83,9 +81,7 @@ class Pca9685_01(object):
   def restart(self):
     print('\n Restart PCA9685 board:0x%02X\n\tThe PWM in regs will be runned from the start'%self.address)
     # 1. Read MODE1 register.
-    mode1_data = self.read(self.__MODE1)
-    # if self.print_value: 
-      
+    mode1_data = self.read(self.__MODE1)      
     print("\t0x%02X.Mode1_data:0x%02X"%(self.address,mode1_data))
 
     # 2. Check that bit 7 (RESTART) is a logic 1. If it is, clear bit 4 (SLEEP). 
@@ -128,7 +124,7 @@ class Pca9685_01(object):
       return False
     else:  
       port = self.__LED0_ON_L + (channel_num)*4
-      if self.print_value: print('\nTesting channel: ',channel_num,'; Port: ',port,'/',hex(port))
+      if self.debug: print('\nTesting channel: ',channel_num,'; Port: ',port,'/',hex(port))
 
     # self.sleep(True)
     # self.write(self.__MODE1, 0x11)
@@ -178,14 +174,14 @@ class Pca9685_01(object):
 
   def setPWMFreq(self, freq):
     "Sets the PWM frequency"
-    prescaleval =     self.osc_clock/4096    # 25MHz 12-bit
-    prescaleval = round(prescaleval/float(freq) )-1
+    prescale_val =     self.osc_clock/4096    # 25MHz 12-bit
+    prescale_val = round(prescale_val/float(freq) )-1
 
     # if (self.debug):
     print("Setting PWM frequency to %d Hz" % freq)
-    print("Estimated pre-scale: %d" % prescaleval)
+    print("Estimated pre-scale: %d" % prescale_val)
     
-    prescale = prescaleval # math.floor(prescaleval + 0.5)
+    prescale = prescale_val # math.floor(prescaleval + 0.5)
     
     if (self.debug):      print("Final pre-scale: %d" % prescale)
 
@@ -194,7 +190,7 @@ class Pca9685_01(object):
     # print("\tOld mode:0x%02X"%oldmode, " Mode to write:0x%02X"%newmode)
 
     self.slave.write_to( regaddr=self.__MODE1, out=bytearray([newmode])) # go to sleep
-    print("\tWritting value: ",prescale,", to prescale reg 0x%02x"%prescale)
+    print("\tWritting value: ",prescale,", to prescale reg ",hex(self.__PRESCALE))
     self.slave.write_to( regaddr=self.__PRESCALE, out=bytearray([prescale]) ) # Value
     print("\tBack to awake mode")
     self.slave.write_to( regaddr=self.__MODE1, out=bytearray([oldmode])) # Restart sign
@@ -223,33 +219,38 @@ class Pca9685_01(object):
       print("Pls use easy mode to Duty Ratio!"); return []
     if (channel<0) or channel >15: 
       print("\nIllegal PWM channel: ",channel,"\n\tShould in range: [0,15]"); return []
-    elif duty_ratio<0 or duty_ratio>1:print("\n\n\t\tREALLY?!?! Illegeal DUTY RATIO!! ");return []
+    elif duty_ratio<0 or duty_ratio>1:
+      print("\n\n\t\t Illegeal DUTY RATIO!! \nPlease set duty ratio to 0-1"); return []
+
     else:  
       port = self.__LED0_ON_L + (channel)*4
-      if self.print_value: print('\nTesting channel: ',channel,'; Port: ',channel,'/',hex(channel))
+      if self.debug: print('\nTesting channel: ',channel,'; Port: ',channel,'/',hex(channel))
       
       off_time =int((4096-1) * duty_ratio )# [off_time_H,off_time_L] = [0000,off_time(12Bit)]
       
-      off_time_b_shortstr= bin(off_time)[2:] # ig: 819/0b1100110011/
-      
-      len_off_t = len(off_time_b_shortstr)
-      if (len_off_t<12) and (len_off_t>0):
-        off_time_b = str("0"*(12-len_off_t)) + str(off_time_b_shortstr)
-      elif len_off_t == 12: off_time_b = off_time_b_shortstr
-      else: print("\n Err!: encoding err inside setChannelDutyRatio when encoding dutyretio in ez mode")
-      
-      off_time_b = str("0"*(4)) + off_time_b
-      len_off_time_b = len(off_time_b)
-      if not len_off_time_b == 16:  
-        print(off_time_b,"Len:",len_off_time_b)
-        print("Err: Encoding err, data not correct"); exit()
-      else: 
-        off_time_L = int(off_time_b[8:],2)
-        off_time_H = int(off_time_b[0:7],2)    
+      off_time_L = off_time & 0xFF
+      off_time_H = off_time >> 8
+
+      # while False: # Old method
+      #   off_time_b_shortstr= bin(off_time)[2:] # ig: 819/0b1100110011/
+      #   len_off_t = len(off_time_b_shortstr)
+      #   if (len_off_t<12) and (len_off_t>0):
+      #     off_time_b = str("0"*(12-len_off_t)) + str(off_time_b_shortstr)
+      #   elif len_off_t == 12: off_time_b = off_time_b_shortstr
+      #   else: print("\n Err!: encoding err inside setChannelDutyRatio when encoding dutyretio in ez mode")
+        
+      #   off_time_b = str("0"*(4)) + off_time_b
+      #   len_off_time_b = len(off_time_b)
+      #   if not len_off_time_b == 16:  
+      #     print(off_time_b,"Len:",len_off_time_b)
+      #     print("Err: Encoding err, data not correct"); exit()
+      #   else: 
+      #     off_time_L = int(off_time_b[8:],2)
+      #     off_time_H = int(off_time_b[0:7],2)    
       
       if stop_sending:
-        self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value
-        self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=False ) # Value
+        # self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value
+        # self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=False ) # Value
         self.slave.write_to( regaddr=port+2, out=bytearray([off_time_L]),relax=False ) # Value
         self.slave.write_to( regaddr=port+3, out=bytearray([off_time_H])) # Value
       else:
@@ -283,9 +284,10 @@ class Pca9685_01(object):
   def test_wires(self,channels,dutys,intervals,conf0 = False):
     # [active_duty,sustain_duty,stop_duty] = dutys
     # [burst_interval,sustain_interval,stop_interval] = intervals
-    if not len(dutys)==len(intervals): 
-      print("\n\nError!\tin test_wires\t"); return []
-    if conf0 and not channels[-1]==0 : channels.append(0)
+    # if not len(dutys)==len(intervals): 
+    #   print("\n\nError!\tin test_wires\t"); return []
+
+    # if conf0 and not channels[-1]==0 : channels.append(0)
 
     for _duty,_interval in zip(dutys,intervals) :
         print("PCA Setting Duty Ratio",channels,_duty,_interval)

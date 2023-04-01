@@ -1,7 +1,7 @@
 # This file is to find out how to read sensoe values of LSM6DS3
 # import lib.LSM6DS3.lsm6ds3 as LSM6DS3
 from audioop import avg
-import time
+import time,os
 from matplotlib import pyplot as plt
 import numpy as np
 from  lsm6ds3.LSM6DS3 import Lsm6ds3_01 as LSM
@@ -19,20 +19,24 @@ def test_FIFO():
 if __name__=='__main__':
 
 
-    exit()
-
     plt.ion()
     # Instantiate an I2C controller
     IIC_device = i2c.I2cController()
     # Configure the first interface (IF/1) of the FTDI device as an I2C master
-    IIC_device.configure('ftdi://ftdi:232h:0/1',frequency= 400E3) # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+    url_2 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FD/0')
+    IIC_device.configure(url_2,frequency= 400E3) # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
 
     print('\n\n')
     lsm6ds3 = LSM(IIC_device) #LSM(i2c_controller= IIC_device,address= lsm_addr, debug=False,pause=0.8)
     lsm6ds3.reset()
     # lsm6ds3.reset()
 
-    if True: # latency test
+    # lsm6ds3.readSensors(return_mode=1)
+    # lsm6ds3.changeRange()
+    # lsm6ds3.readSensors(return_mode=1)
+
+    # exit()
+    if False: # latency test
         latencys = []
         for t in range(100):
             st = time.time()      
@@ -54,15 +58,28 @@ if __name__=='__main__':
         axis_x.append(t); plt.clf() 
 
         st = time.time()      
-        res = lsm6ds3.readHighSpeed() # 0.017958402633666992 S
+        # res = lsm6ds3.readHighSpeed() # 0.017958402633666992 S
+        res = lsm6ds3.readSensors() # 0.017958402633666992 S
+
+        print(lsm6ds3.temp())
         # print("readWordSpeed: ",res)
         ed = time.time()
         # print("It uses: ",ed-st,"S")
 
-        for _i in range(6): 
-            i = _i+1
-            all_list[i].append(res[i])
-            plt.plot(axis_x,all_list[i],label = labels[i])
+        # print(res)
+        for _i in range(7): 
+            # print(_i,res[_i])
+            all_list[_i].append(res[_i])
+            # plt.plot(axis_x,all_list[i],label = labels[i])
+
+        plt.subplot(3,1,1)
+        plt.plot(axis_x,all_list[0],label = 'Temp')
+        
+        plt.subplot(3,1,2)        
+        for _i in range(3):plt.plot(axis_x,all_list[_i+1],label = labels[_i+1])
+        
+        plt.subplot(3,1,3)
+        for _i in range(3):plt.plot(axis_x,all_list[_i+4],label = labels[_i+4])
         
         # if t%100 == 0: all_list = [[],[],[],[],[],[],[]];axis_x = []
         # plt.legend()
