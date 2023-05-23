@@ -30,20 +30,20 @@ from ads1115.TIADS1115 import HW526Angle as ANGLESENSOR
 
 if True: # Experiment settings
     
-    VOT = 12 # Vlots
-    LOAD = 10 # Grams
+    VOT = 20 # Vlots
+    LOAD = 20 # Grams
 
-    # Main derections
+    # Positive derections
     DUTYS_P = [0.09,1,0.2,0.14,0.1,0]# [1,0.2]   # [预热 响应 维持]c 
     INTERVALS_P =[1,0.3,2,2,2,2]# [0.2,1]
-
+    
     # Reversed derections
-    DUTYS_M = [1,0.3,0]# [1,0.2]   # [预热 响应 维持]c
-    INTERVALS_M =[0.2,2,0.1]# [0.2,1]
+    DUTYS_M = [1,0.3]# [1,0.2]   # [预热 响应 维持]c
+    INTERVALS_M =[0.2,2]# [0.2,1]
 
     DO_PLOT = False
     if DO_PLOT: TIME_OUT = 10000
-    else: TIME_OUT = 13
+    else: TIME_OUT = 15
 
     LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
     # LABELS = ['R','Time']
@@ -186,8 +186,8 @@ def ctrlProcess(i2c_actuator_controller_URL=[]): # PCA
     
     # experiment
     # experment_fan(actuator_device)
-    # experiment_0(actuator_device,[12,0])
-    experiment_1(actuator_device)
+    # experiment_0(actuator_device,[4,6,0]) 
+    experiment_1(actuator_device) # ICMA
 
     
     actuator_device.i2c_controller.close()
@@ -201,13 +201,16 @@ def experment_fan(actuator_device):
 def experiment_0(actuator_device,wire_channles):
     dutys = DUTYS_P # [预热 响应 维持]
     intervals = INTERVALS_P
+    # actuator_device.res
     actuator_device.test_wires(wire_channles,dutys,intervals,conf0=True)
     pass
 
-def experiment_1(actuator_device):
-    wire_channles = [4,0]
+def experiment_1(actuator_device): # ICMA 
+    
+    wire_channles = [4,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
     actuator_device.test_wires(wire_channles,DUTYS_P,INTERVALS_P,conf0=True)
     
+    # Extensor direction: DR [1,0.3] Duration [0.2,2]
     wire_channles = [6,0]
     actuator_device.test_wires(wire_channles,DUTYS_M,INTERVALS_M,conf0=True)
 

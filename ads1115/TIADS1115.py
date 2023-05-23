@@ -76,6 +76,7 @@ class TiAds1115_01(object): # TODO
   def readSensors(self,is_show=False):
     _res = []
     _reading =  self.slave.read_from(0x00,readlen=2) 
+    
     _reading = int.from_bytes(_reading, byteorder='big', signed=True) 
     _res.append( _reading )
     if is_show: print("Last conversion res: ",_reading)

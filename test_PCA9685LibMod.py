@@ -17,10 +17,12 @@ if __name__=='__main__':
   pwm_addr = 0x40
   pca9685 = PCA9685(IIC_device,debug=True,easy_mdoe=True)
   # pca9685.reset()
+   
 
   pca9685.setPWMFreq(1526)
-  pca9685.setDutyRatioCH(4,1)
-  pca9685.setDutyRatioCH(0,1)
+  dr = 0.08
+  pca9685.setDutyRatioCH(12, duty_ratio=dr)
+  pca9685.setDutyRatioCH(0, duty_ratio=dr)
 
   time.sleep(400000)
   pca9685.setDutyRatioCH(0,0)
