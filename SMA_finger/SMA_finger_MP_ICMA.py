@@ -24,8 +24,8 @@ import numpy as np
 import pyftdi.i2c as i2c
 from matplotlib import pyplot as plt
 
-from lsm6ds3.LSM6DS3 import Lsm6ds3_01 as LSM
-from pca9685.PCA9685 import Pca9685_01 as PCA
+from lsm6ds3.LSM6DS3 import Lsm6ds3_01 as IMUCHIP
+from pca9685.PCA9685 import Pca9685_01 as PWMGENERATOR
 from ads1115.TIADS1115 import HW526Angle as ANGLESENSOR
 
 if True: # Experiment settings
@@ -96,8 +96,8 @@ class SMAfingerMP_01(object):
         # USB\VID_0403&PID_6014\6&263914d5&0&1
 
         print('\n\n')
-        lsm6ds3_A = LSM(i2c_controller,lsm_addr); lsm6ds3_A.reset()
-        pca9685_A = PCA(i2c_controller,pca_addr,debug=False); pca9685_A.reset()
+        lsm6ds3_A = IMUCHIP(i2c_controller,lsm_addr); lsm6ds3_A.reset()
+        pca9685_A = PWMGENERATOR(i2c_controller,pca_addr,debug=False); pca9685_A.reset()
 
         self.lsm_list.append(lsm6ds3_A)
         self.pca_list.append(pca9685_A)
@@ -174,7 +174,7 @@ def ctrlProcess(i2c_actuator_controller_URL=[]): # PCA
         i2c_device = i2c.I2cController()
         # print(i2c_actuator_controller_URL)
         i2c_device.configure(i2c_actuator_controller_URL)
-        actuator_device = PCA(i2c_device,debug=False)
+        actuator_device = PWMGENERATOR(i2c_device,debug=False)
         actuator_device.reset()
 
     # Set wire initial state
@@ -225,7 +225,7 @@ def sensor_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False):
         print("Configuring device ",str(i2c_sensor_controller_URL)," for experiment")
         i2c_device = i2c.I2cController()
         i2c_device.configure(i2c_sensor_controller_URL)
-        sensor_device =LSM(i2c_device)
+        sensor_device =IMUCHIP(i2c_device)
         sensor_device.reset()        
         sensor_device.setRange()
         
@@ -233,7 +233,7 @@ def sensor_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False):
     axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
     all_list = [[],[],[],[],[],[],[],[]]
     
-    if not isinstance(sensor_device,LSM):print("Programe err! @ sense_LSM6DS3, pls check coding!"); exit()
+    if not isinstance(sensor_device,IMUCHIP):print("Programe err! @ sense_LSM6DS3, pls check coding!"); exit()
 
     # # Empty run for 1 sec
     # t0 =  time.clock()
@@ -290,7 +290,7 @@ def sense_LSM_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     else: 
         i2c_device = i2c.I2cController()
         i2c_device.configure(i2c_sensor_controller_URL,frequency = 400E3)
-        sensor_device =LSM(i2c_device);sensor_device.reset()        
+        sensor_device =IMUCHIP(i2c_device);sensor_device.reset()        
 
     # plt.ion()
     axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
@@ -437,18 +437,18 @@ def findFtdiDevice(addr): # find corresbonding device
     
     if addr == 0x40: # PCA 
         try: 
-            device = PCA(i2c_device_0,addr,debug=False); device.reset()
+            device = PWMGENERATOR(i2c_device_0,addr,debug=False); device.reset()
         except Exception as err: 
             print("\nErr @0x40",err)
-            device = PCA(i2c_device_1,addr,debug=False); device.reset()
+            device = PWMGENERATOR(i2c_device_1,addr,debug=False); device.reset()
 
     elif addr == 0x6b: # Gryoscope address
         try: 
-            device =LSM(i2c_device_0); device.reset()
+            device =IMUCHIP(i2c_device_0); device.reset()
         except Exception as err:
             print("\nErr @0x6b",err)
             
-            device = LSM(i2c_device_1); device.reset()
+            device = IMUCHIP(i2c_device_1); device.reset()
 
     return device
 
@@ -474,7 +474,7 @@ def findFtdiAddr():
     for _url in url_list:
         try:
             _device.configure(_url,frequency = 400E3)
-            _PCA_device = PCA(_device); _PCA_device.reset()
+            _PCA_device = PWMGENERATOR(_device); _PCA_device.reset()
             # _PCA_device.testChannle(0)
             addr_PCA = _url
             url_list.remove(_url)
@@ -486,7 +486,7 @@ def findFtdiAddr():
     for _url in url_list:
         try:
             _device.configure(_url,frequency = 400E3)
-            _LSM_device = LSM(_device); _LSM_device.reset()
+            _LSM_device = IMUCHIP(_device); _LSM_device.reset()
             addr_LSM = _url
             url_list.remove(_url)
             print("Found LSM addr:",addr_LSM)

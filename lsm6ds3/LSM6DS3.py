@@ -189,7 +189,7 @@ class Lsm6ds3_01:
     
     start_addr += self.__OUT_TEMP_L
     retry_load_max = 5
-    _raw = self.slave.read_from(start_addr,len_load*2)   
+    _raw = self.slave.read_from(start_addr,len_load*2,relax=False)   
     
     while not len(_raw) == len_load*2: # Retry loading
       retry_load_max -= 1

@@ -15,7 +15,7 @@ class TiAds1115_01(object): # TODO
   # __SUBADR1            = 0x02
   # __SUBADR2            = 0x03
   
-  def __init__(self, i2c_controller,address=0x48,easy_mdoe= True,debug=False,): # TODO
+  def __init__(self, i2c_controller,address=0x48,hs_mdoe=False,easy_mdoe= True,debug=False,): # TODO
     print("Creating New Ti Ads1115_01 I2C slave :",hex(address))
     self.init_time = time.time()
 
@@ -33,9 +33,12 @@ class TiAds1115_01(object): # TODO
       # print("Reseting PCA9685: ",'%#x'%self.address )
       # print("Initial Mode_1 reg value: ",'%#x'%self.read(self.__MODE1))
       pass
+
+    # if hs_mdoe: self.highSpeedMode() # BUG
+
     print("Ti Ads1115 Device created! initial state:",self.getState(is_show=True))
-       
-    self.setRange()
+      
+    self.setRange(maxVoltage=3.3)
     pass
 
   def selfTest(self,rounds=100,is_show=False):
@@ -73,18 +76,27 @@ class TiAds1115_01(object): # TODO
 
     return histroy
 
-  def readSensors(self,is_show=False):
+  def readSensors(self,num_ch=1,is_show=False):
     _res = []
-    _reading =  self.slave.read_from(0x00,readlen=2) 
-    
-    _reading = int.from_bytes(_reading, byteorder='big', signed=True) 
-    _res.append( _reading )
+    _reading =  self.slave.read_from(0x00,readlen=2*num_ch,relax=False) #####! Undergoing!!!!!!!
+    # print(_reading)
+
+    # print("_reading:",_reading)
+
+    if num_ch ==1 : 
+      int_reading = int.from_bytes(_reading, byteorder='big', signed=True) 
+      _res.append( int_reading )
+    else:      # Seprate each 2-bytes
+      for _i in range(num_ch):
+        int_reading = int.from_bytes(_reading[_i*2:_i*2+2], byteorder='big', signed=True) 
+        _res.append( int_reading )
+
     if is_show: print("Last conversion res: ",_reading)
     return _res
   
-  def startConversion(self,data_rate=128,is_continue=False,is_show=False):
+  def startConversion(self,data_rate=860,is_continue=False,is_show=False):
     # Mode 8th bit @ addrt 0x01 [15:0]
-    _curr_mode =  self.slave.read_from(0x01,readlen=2) 
+    _curr_mode =  self.slave.read_from(0x01,readlen=2,relax=False) 
     config_regH =_curr_mode[0]; config_regL= _curr_mode[1]
 
     if is_continue: # Continued mode
@@ -93,7 +105,6 @@ class TiAds1115_01(object): # TODO
       for _mode,_code in zip(_data_rates,_codes): 
         if _mode >= data_rate: break
       
-
       config_regH = _curr_mode[0] & 0b11111110 # MODE -> 0(CONTINUES MODE)
       config_regL = (_curr_mode[1]& 0x1F)|_code<<5
 
@@ -104,7 +115,7 @@ class TiAds1115_01(object): # TODO
       self.readSensors(is_show)
     return []
   
-  def setRange(self,maxVoltage = 5): # DONE
+  def setRange(self,maxVoltage = 3.3): # DONE
     # Change range depends on the 
       # maxVoltage: maxium level of in put analog signal
 
@@ -114,20 +125,17 @@ class TiAds1115_01(object): # TODO
     for _mode,_code in zip(_modes,_codes): 
       if maxVoltage <= _mode: break
 
-    _reading =  self.slave.read_from(regaddr = 0x01,readlen=2) 
+    _reading =  self.slave.read_from(regaddr = 0x01,readlen=2,relax=False) 
     _to_write = (_reading[0] & 0x0001) or _code<<1
 
     self.slave.write_to( regaddr=0x01 , out= [_to_write,_reading[1]] )
-   
-
-    pass
+    
 
   def getState(self,Point=00,is_show= False):
     regaddrs = [0x00,0x01,0x02,0x03]
     _res = []
     """ 7:2	Reserved 0 ;1:0	P[1:0]
     00 : Conversion register;01 : Config register; 10 : Lo_thresh register; 11 : Hi_thresh register """
-
 
     # Case 00:  
     """ The 16-bit Conversion register contains the result of the last conversion in binary two's complement format. 
@@ -141,7 +149,7 @@ class TiAds1115_01(object): # TODO
     """9.6.3 Config Register (P[1:0] = 1h) [reset = 8583h]
     The 16-bit Config register is used to control the operating mode, 
     input selection, data rate, full-scale range, and comparator modes."""
-    _reading =  self.slave.read_from(regaddr = regaddrs[1],readlen=2) 
+    _reading =  self.slave.read_from(regaddr = regaddrs[1],readlen=2,relax=False) 
     if is_show: 
       print("Opearting state: ",(_reading[0] & 0x80) >>7)
       print("Input multiplexer state: ",str(_reading[0]>>4 & 0x07) )
@@ -157,13 +165,13 @@ class TiAds1115_01(object): # TODO
     _res.append( _reading )
 
     # Case 10:
-    _reading =  self.slave.read_from(regaddr = regaddrs[2],readlen=2) 
+    _reading =  self.slave.read_from(regaddr = regaddrs[2],readlen=2,relax=False) 
     _reading = int.from_bytes(_reading, byteorder='big', signed=True) 
     if is_show: print("Low threshold:",_reading)
     _res.append( _reading )
 
     # Case 11:
-    _reading =  self.slave.read_from(regaddr = regaddrs[3],readlen=2) 
+    _reading =  self.slave.read_from(regaddr = regaddrs[3],readlen=2,relax=False) 
     _reading = int.from_bytes(_reading, byteorder='big', signed=True) 
     if is_show: print("High threshold:",_reading)
     _res.append( _reading )
@@ -173,7 +181,7 @@ class TiAds1115_01(object): # TODO
   def read(self, reg): 
     "Read an unsigned byte from the I2C device"
     # result = self.slave.read_byte_data(self.address, reg)
-    result = (self.slave.read_from(regaddr = reg,readlen=1))[0]
+    result = (self.slave.read_from(regaddr = reg,readlen=1,relax=False))[0]
     # result
     if self.debug: print("\tI2C: Device 0x%02X returned 0x%02X from reg 0x%02X" % (self.address, result & 0xFF, reg))
     return result
@@ -181,7 +189,7 @@ class TiAds1115_01(object): # TODO
   def write(self, reg_add, input_value, doCheck = True):
     "Writes an 8-bit value to the specified register/address"
     
-    if doCheck :value_before =  (self.slave.read_from(regaddr=reg_add, readlen=1))[0]#
+    if doCheck :value_before =  (self.slave.read_from(regaddr=reg_add, readlen=1,relax=False))[0]#
 
     if isinstance(input_value,int): in_value =  bytearray([input_value]) 
     else: in_value = input_value
@@ -190,7 +198,7 @@ class TiAds1115_01(object): # TODO
     
     if doCheck: # Check
       time.sleep(0.1)
-      value_after =  self.slave.read_from(regaddr=reg_add, readlen=1)[0]# self.read(reg_add)
+      value_after =  self.slave.read_from(regaddr=reg_add, readlen=1,relax=False)[0]# self.read(reg_add)
       if (value_after-value_before) == 0:
         if input_value == value_after: 
           if self.debug: print("\tInputted and saved values are equal, however it is still writted!")
@@ -236,12 +244,19 @@ class TiAds1115_01(object): # TODO
 
       For more information on high-speed mode, consult the I2C specification.
     """
+    send = 0b00001000 + 0b111
+    # print(send);exit()
+    try:  
+      # self.i2c_controller._do_write(out=send)    
+      self.i2c_controller.write(self.address,out=send,relax=False )
+    except Exception as err: pass
+    return []
 
 class HW526Angle(TiAds1115_01):
 
-  def __init__(self, i2c_controller,address=0x48,easy_mdoe= True,debug=False,name=[]):
+  def __init__(self, i2c_controller,address=0x48,easy_mdoe= True,hs_mode=False, debug=False,name=[]):
     # from lib.GENERALFUNCTIONS import *
-    super(HW526Angle,self).__init__(i2c_controller,address,easy_mdoe,debug)
+    super(HW526Angle,self).__init__(i2c_controller,address,hs_mode,easy_mdoe,debug)
     self.calibrationData = []
     self.name = name
     print(FIG_FOLDER)
@@ -281,7 +296,6 @@ class HW526Angle(TiAds1115_01):
 
     # Cal calibration ?
     if len(angles) == 2:
-      # x = self.readSensors()
       raw_R = numpy.array(raw_R)
       angles = numpy.array(angles)
 
@@ -300,12 +314,11 @@ class HW526Angle(TiAds1115_01):
     self.model_k = k
     return raw_R
 
-
-  def readSensors(self,is_show=False):
-    _reading = super(HW526Angle,self).readSensors(is_show) 
+  # Undergoing
+  def readSensors(self,num_ch=1 ,is_show=False):
+    _reading = super(HW526Angle,self).readSensors(num_ch,is_show) 
     res = []
-    for _res in _reading:
-      res.append( _res * self.model_k + self.model_b)
+    for _res in _reading: res.append( _res * self.model_k + self.model_b)
     return res
 
 

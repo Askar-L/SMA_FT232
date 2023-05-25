@@ -4,8 +4,8 @@ from audioop import avg
 import time,os
 from matplotlib import pyplot as plt
 import numpy as np
-from  lsm6ds3.LSM6DS3 import Lsm6ds3_01 as LSM
-from pca9685.PCA9685 import Pca9685_01 as PCA
+from  lsm6ds3.LSM6DS3 import Lsm6ds3_01 as IMUCHIP
+from pca9685.PCA9685 import Pca9685_01 as PWMGENERATOR
 
 # sys.path.append("..")
 
@@ -27,7 +27,7 @@ if __name__=='__main__':
     IIC_device.configure(url_2,frequency= 400E3) # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
 
     print('\n\n')
-    lsm6ds3 = LSM(IIC_device) #LSM(i2c_controller= IIC_device,address= lsm_addr, debug=False,pause=0.8)
+    lsm6ds3 = IMUCHIP(IIC_device) #LSM(i2c_controller= IIC_device,address= lsm_addr, debug=False,pause=0.8)
     lsm6ds3.reset()
     # lsm6ds3.reset()
 

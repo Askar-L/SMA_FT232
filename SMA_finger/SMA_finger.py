@@ -12,8 +12,8 @@ import pyftdi.i2c as i2c
 from matplotlib import pyplot as plt
 import time
 
-from lsm6ds3.LSM6DS3 import Lsm6ds3_01 as LSM
-from pca9685.PCA9685 import Pca9685_01 as PCA
+from lsm6ds3.LSM6DS3 import Lsm6ds3_01 as IMUCHIP
+from pca9685.PCA9685 import Pca9685_01 as PWMGENERATOR
 # import PCA9685.pca9685 as PCA9685
 
 class SMAfinger_01(object):
@@ -37,8 +37,8 @@ class SMAfinger_01(object):
         i2c_controller.configure('ftdi://ftdi:232h/1') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
 
         print('\n\n')
-        lsm6ds3_A = LSM(i2c_controller,lsm_addr); lsm6ds3_A.reset()
-        pca9685_A = PCA(i2c_controller,pca_addr,debug=False); pca9685_A.reset()
+        lsm6ds3_A = IMUCHIP(i2c_controller,lsm_addr); lsm6ds3_A.reset()
+        pca9685_A = PWMGENERATOR(i2c_controller,pca_addr,debug=False); pca9685_A.reset()
 
         self.lsm_list.append(lsm6ds3_A)
         self.pca_list.append(pca9685_A)

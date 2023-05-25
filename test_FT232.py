@@ -12,13 +12,89 @@
 # print(dev)
 from ast import Pass
 from itertools import cycle
-import time
+import time,os
+
+url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0') 
+import pyftdi.i2c as ftdii2c
+# from pyftdi.ftdi import Ftdi
+# import pyftdi.gpio as Gpio
+
+if False:
+    
+    
+    gpio = Gpio.GpioAsyncController()
+
+    output_pins = 0 #0b01110110
+
+    gpio.configure( url_0, direction= output_pins ) # 0111 0110
+
+    
+    # read whole port
+    pins = gpio.read()
+    print(pins & ~output_pins) 
+    # ignore output values (optional)
+    pins &= ~gpio.direction
+    gpio.close()
+
+    exit()
+
+if True:
+    # use I2C feature
+    i2c = ftdii2c.I2cController()
+    # configure the I2C feature, and predefines the direction of the GPIO pins
+    i2c.configure('ftdi:///1', direction=0x78)
+    gpio = i2c.get_gpio()
+
+    output_pins = 0b11111000
+    gpio.set_direction( output_pins, output_pins )
+    
+    # read whole port
+    pins = gpio.read()
+    print("pins: ",pins)
+
+    # # clearing out I2C bits (SCL, SDAo, SDAi)
+    # pins &= 0x07
+    # # set AD4
+    # pins |= 1 << 4
+
+    # update GPIO output
+    t_start = time.time()
+    for _i  in range(1000):
+        gpio.write(0b00000000)
+        gpio.write(output_pins)
+    t_end = time.time()
+    print(t_end-t_start)
+    exit()
 
 
+if True:
+    
+
+    i2c_sensor_controller_URL = url_0
+    print("Configuring device ",str(i2c_sensor_controller_URL)," for experiment")
+
+    i2c_device = ftdii2c.I2cController()
+
+    output_pins = 0x78 #0b01111000 # 0b00000000 #11111111 #0b01110110
+
+    i2c_device.configure(i2c_sensor_controller_URL, direction=output_pins) # direction=0x76 & direction=0x78
+        
+    gpio = i2c_device.get_gpio()
+
+    pins = gpio.read()
+    print("pins under IIC:",pins)
+
+    # clearing out I2C bits (SCL, SDAo, SDAi)
+    pins &= 0x07
+    # set AD4
+    pins |= 1 << 4
+    # update GPIO output
+    gpio.write(pins)
+
+    exit()
+ 
 if True: # Port and env tests
-    import board
-    print(dir(board))
-    print("\n\n 1 Yes")
+
 
     from pyftdi.ftdi import Ftdi
     Ftdi().open_from_url('ftdi:///1')
