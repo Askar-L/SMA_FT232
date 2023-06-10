@@ -15,6 +15,26 @@ DATA_FOLDER = "./IMG/"
 FIG_SIZE = (12.8,8.00)#(19.2,10.8)
 FONTSIZE = 18
 
+class Logger(object):
+    def __init__(self, filename=[]):
+        if filename is not None:
+            filename =  FIG_FOLDER+time.strftime("_%b%d_%H.%M.%S",time.localtime(RUNTIME))+'.txt'
+
+        self.terminal = sys.stdout
+        self.log = open(filename, "a")
+ 
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+ 
+    def flush(self):
+        pass
+    
+    def _eg_codes():
+        path = os.path.abspath(os.path.dirname(__file__))
+        type = sys.getfilesystemencoding()
+        sys.stdout = Logger()
+
 def saveData(data,file_name,labels,f_type:str="csv",**kwargs: Mapping[str, Any]):
  
     # file_name = time.strftime("_%b%d_%H.%M",runtime)+str(dutys)+str(intervals)

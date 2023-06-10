@@ -5,28 +5,25 @@
 # Created by Askar. Liu @ 20221020
 # Modified @20230221: Add logger
 
-from concurrent.futures import process
+# General funcs
 import os,sys,time
+import numpy as np
+from matplotlib import pyplot as plt
 
-
-# from pickle import TRUE
 parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0,parentdir)
-from lib.GENERALFUNCTIONS import *
 
-if True: # START LOGGING
-    _f_consle_log =  FIG_FOLDER+time.strftime("_%b%d_%H.%M.%S",time.localtime(RUNTIME))+'.log'
-    f = open(_f_consle_log , 'a')
-    sys.stdout = f
-    sys.stderr = f		# redirect std err, if necessary
-
-import numpy as np
+# Driver funcs
 import pyftdi.i2c as i2c
-from matplotlib import pyplot as plt
 
 from lsm6ds3.LSM6DS3 import Lsm6ds3_01 as IMUCHIP
 from pca9685.PCA9685 import Pca9685_01 as PWMGENERATOR
 from ads1115.TIADS1115 import HW526Angle as ANGLESENSOR
+
+from lib.GENERALFUNCTIONS import *
+sys.stdout = Logger()
+sys.stderr = sys.stdout		# redirect std err, if necessary
+
 
 if True: # Experiment settings
     
@@ -34,16 +31,16 @@ if True: # Experiment settings
     LOAD = 20 # Grams
 
     # Positive derections
-    DUTYS_P = [0.09,1,0.2,0.14,0.1,0]# [1,0.2]   # [预热 响应 维持]c 
-    INTERVALS_P =[1,0.3,2,2,2,2]# [0.2,1]
+    # DUTYS_P = [0.09,1,0.2,0.14,0.1,0]# [1,0.2]   # [预热 响应 维持]c 
+    # INTERVALS_P =[1,0.3,2,2,2,2]# [0.2,1]
     
-    # Reversed derections
-    DUTYS_M = [1,0.3]# [1,0.2]   # [预热 响应 维持]c
-    INTERVALS_M =[0.2,2]# [0.2,1]
+    # # Reversed derections
+    # DUTYS_M = [1,0.3]# [1,0.2]   # [预热 响应 维持]c
+    # INTERVALS_M =[0.2,2]# [0.2,1]
 
     DO_PLOT = False
     if DO_PLOT: TIME_OUT = 10000
-    else: TIME_OUT = 15
+    else: TIME_OUT = 5
 
     LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
     # LABELS = ['R','Time']
@@ -53,21 +50,22 @@ if True: # Experiment settings
     print(time.strftime('%Y:%m:%d %H:%M:%S', time.localtime()))
     do_plot = DO_PLOT
     
-
     act_type = 2
-    act_types = {0:"SMA",1:"TSMA",2:"CTSMA"}
+    act_types = {0:"SMA",1:"TSMA",2:"CTSMA",3:"SSA"}
     
+def print_info(dutys_P,intervals_P):
+
     print("Expriment data:\n")
     print("\t act_type:\t",act_types[act_type])
     
-    print("\t DUTYS:    \t",DUTYS_P,"%")
-    print("\t INTERVALS:\t",INTERVALS_P,"Sec")
+    print("\t DUTYS:    \t",dutys_P,"%")
+    print("\t INTERVALS:\t",intervals_P,"Sec")
 
     print("\t VOT: \t",VOT,"Volts")
     print("\t LOAD: \t",LOAD,"Grams")
 
     print("\t DO_PLOT:\t",DO_PLOT)
-    print("\t TIME_OUT:\t",TIME_OUT,"Sec")
+    # print("\t TIME_OUT:\t",TIME_OUT,"Sec")
     print("\t LABELS:\t",LABELS)
     print("\t EXIT_CHECK_FREQ:\t",EXIT_CHECK_FREQ)
 
@@ -186,8 +184,10 @@ def ctrlProcess(i2c_actuator_controller_URL=[]): # PCA
     
     # experiment
     # experment_fan(actuator_device)
-    # experiment_0(actuator_device,[4,6,0]) 
-    experiment_1(actuator_device) # ICMA
+    # experiment_0(actuator_device,[4,6,0])
+    
+    # experiment_ICMA(actuator_device) # ICMA
+    experiment_optimizer(actuator_device) # ICMA
 
     
     actuator_device.i2c_controller.close()
@@ -205,20 +205,39 @@ def experiment_0(actuator_device,wire_channles):
     actuator_device.test_wires(wire_channles,dutys,intervals,conf0=True)
     pass
 
-def experiment_1(actuator_device): # ICMA 
+def experiment_ICMA(actuator_device): # ICMA 
+    wire_channles_P = [4,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
+    wire_channles_M = [6,0]
     
-    wire_channles = [4,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
-    actuator_device.test_wires(wire_channles,DUTYS_P,INTERVALS_P,conf0=True)
+    # Positive derections
+    DUTYS_P = [0.09,1,0.2,0.14,0.1,0]# [1,0.2]   # [预热 响应 维持]c 
+    INTERVALS_P =[1,0.3,2,2,2,2]# [0.2,1]
     
+    # Reversed derections
+    DUTYS_M = [1,0.3]# [1,0.2]   # [预热 响应 维持]c
+    INTERVALS_M =[0.2,2]# [0.2,1]
+
+    print_info()
+    actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,conf0=True)
     # Extensor direction: DR [1,0.3] Duration [0.2,2]
-    wire_channles = [6,0]
-    actuator_device.test_wires(wire_channles,DUTYS_M,INTERVALS_M,conf0=True)
+    actuator_device.test_wires(wire_channles_M,DUTYS_M,INTERVALS_M,conf0=True)
+
+    pass
+
+def experiment_optimizer(actuator_device):
+
+    wire_channles_p = [4,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
+    dutys_P = [0,1,0]
+    intervals_P = [0.2,0.3,4]
+    
+    print_info(dutys_P,intervals_P)
+    actuator_device.test_wires(wire_channles_p,dutys_P,intervals_P,conf0=True)
 
     pass
 
 def sensor_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False): # NONE FIFO Version
     lsm_addr = 0x6b # Gryoscope address
-    check_interval = int(EXIT_CHECK_FREQ/0.017)
+    check_interval = int(EXIT_CHECK_FREQ/0.001)
 
     if i2c_sensor_controller_URL==[]: sensor_device = findFtdiDevice(lsm_addr)
     elif sensor_device==[]:
@@ -339,7 +358,7 @@ def sense_LSM_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
 def sense_ADS1115(i2c_sensor_controller_URL=[],angle_sensor_01=[],do_plot=False): # TODO
 
     ads_addr = 0x48 # ADS1115 address
-    check_interval = int(EXIT_CHECK_FREQ/0.017)
+    check_interval = int(EXIT_CHECK_FREQ/0.0008)
 
     if i2c_sensor_controller_URL==[]: angle_sensor_01 = findFtdiDevice(ads_addr)
     elif angle_sensor_01==[]:
@@ -416,7 +435,7 @@ def sensorProcess(mode="ADC",i2c_sensor_controller_URL=[],LSM_device=[],do_plot=
         
     # data = sense_LSM6DS3(i2c_sensor_controller_URL,LSM_device,do_plot)
     # data = sense_FIFO(i2c_sensor_controller_URL,do_plot)
-    file_name = mode+time.strftime("_%b%d_%H.%M",time.localtime(RUNTIME))+str(DUTYS_P)+str(INTERVALS_P)
+    file_name = mode+time.strftime("_%b%d_%H.%M.%S",time.localtime(RUNTIME))
 
     saveData(data,file_name,LABELS)
     saveFigure(data,file_name,LABELS)
@@ -560,11 +579,10 @@ if __name__=='__main__': # Test codes # Main process
     process_ctrl = Process(target= ctrlProcess,args=(url_Control,))
     
 
-
     process_sensor_ADC.start()
     process_sensor_IMU.start()
     # time.sleep(1)
     process_ctrl.start()
 
 
-
+    pass

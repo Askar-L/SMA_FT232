@@ -257,6 +257,7 @@ class HW526Angle(TiAds1115_01):
   def __init__(self, i2c_controller,address=0x48,easy_mdoe= True,hs_mode=False, debug=False,name=[]):
     # from lib.GENERALFUNCTIONS import *
     super(HW526Angle,self).__init__(i2c_controller,address,hs_mode,easy_mdoe,debug)
+    # self.i2c_controller = i2c_controller
     self.calibrationData = []
     self.name = name
     print(FIG_FOLDER)

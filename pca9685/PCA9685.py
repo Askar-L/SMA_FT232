@@ -1,15 +1,21 @@
 # Created by Askar based on a gitbuh project
 # Modified in 2022 10 14
+from ast import Pass
 import math, time, sys
 from lib.GENERALFUNCTIONS import *
 
 class Pca9685_01(object):
   # Registers/etc.
+  __MODE1              = 0x00
+  __MODE2              = 0x01
+
   __SUBADR1            = 0x02
   __SUBADR2            = 0x03
   __SUBADR3            = 0x04
-
-  __MODE1              = 0x00
+  
+  # __SWRST              = 0x06
+  
+  
   __PRESCALE           = 0xFE
 
   __LED0_ON_L          = 0x06
@@ -37,27 +43,24 @@ class Pca9685_01(object):
     self.address = address
     self.debug = debug
     self.osc_clock = 25000000.0
-    self.easy_mdoe = easy_mdoe
-    # self.initial_values = []
-    # self.freqList = [0 for _ in range(10)]
-    # self.dutyratioList = [0 for _ in range(10)]
-    # self.onoffList = [0 for _ in range(10)]
+    self.easy_mdoe = easy_mdoe 
+    self.OCH_mode = False
+    self.reset()
 
-    if (self.debug): 
-      print("Reseting PCA9685: ",'%#x'%self.address )
-      print("Initial Mode_1 reg value: ",'%#x'%self.read(self.__MODE1))
-    print("PCA9685 Device created!")
 
   def reset(self): #BUG
+    i2c_controller = self.i2c_controller
     #     The SWRST Call function is defined as the following:
     # 1. A START command is sent by the I2C-bus master.
-
+    i2c_controller._do_prolog( (self.address << 1) & i2c_controller.HIGH )
     # 2. The reserved SWRST I2C-bus address ‘0000 0000’ with the R/W bit set to ‘0’ (write) is
     # sent by the I2C-bus master.
 
     # 3. The PCA9685 device(s) acknowledge(s) after seeing the General Call address
     # ‘0000 0000’ (00h) only. If the R/W bit is set to ‘1’ (read), no acknowledge is returned to
     # the I2C-bus master.
+
+    self.write(0x00,bytearray([0x06]),doCheck=False)
 
     # 4. Once the General Call address has been sent and acknowledged, the master sends
     # 1 byte with 1 specific value (SWRST data byte 1):
@@ -70,12 +73,18 @@ class Pca9685_01(object):
     # PCA9685 then resets to the default value (power-up value) and is ready to be
     # addressed again within the specified bus free time (tBUF).
     
-    __SWRST = 0b00000110
     
-    print(self.read(__SWRST))
+    
+    # print(self.read(__SWRST))
 
-    self.write(0x00,bytearray([0x06]))
     print('\nSucess Reseted PCA9685 board:0x%02X'%self.address)
+    self.i2c_controller._do_epilog()
+
+    if (self.debug): 
+      print("Reseting PCA9685: ",'%#x'%self.address )
+      print("Initial Mode_1 reg value: ",'%#x'%self.read(self.__MODE1))
+      print("Initial Mode_2 reg value: ",'%#x'%self.read(self.__MODE2))
+
     return []
 
   def restart(self):
@@ -86,12 +95,14 @@ class Pca9685_01(object):
 
     # 2. Check that bit 7 (RESTART) is a logic 1. If it is, clear bit 4 (SLEEP). 
         # Allow time for oscillator to stabilize (500 us).
-    if (mode1_data & 128): 
+    if (mode1_data >>6)==1: 
       mode1_data = self.write(self.__MODE1,mode1_data & 0xEF) # 239=1110 1111
+
     # 3. Write logic 1 to bit 7 of MODE1 register. All PWM channels will restart and the
     # RESTART bit will clear
     self.slave.write_to( regaddr= self.__MODE1, out=bytearray(mode1_data | 128 ))
-    
+
+
     pass
 
   def quickShutdown(self):
@@ -136,7 +147,7 @@ class Pca9685_01(object):
     
     self.write(self.__MODE1, 0x01)
     # time.pause(0.5)
-    self.setDutyRatioCH(channel_num,0,stop_sending=True)
+    self.setDutyRatioCH(channel_num,0)
 
     pass
 
@@ -160,7 +171,7 @@ class Pca9685_01(object):
           print("\tValue is changed, however does not mattches the desire value!")
           print("\tConsider chaecking the chip datasheet about the correct value for changing")
           
-      if self.debug: print("\tI2C: Device 0x%02X writted 0x%02X to reg 0x%02X" % (self.address, input_value, reg_add))
+      # if self.debug: print("\tI2C: Device 0x%02X writted 0x%02X to reg 0x%02X" % (self.address, input_value, reg_add))
       return value_after
     return in_value
     
@@ -194,7 +205,26 @@ class Pca9685_01(object):
     self.slave.write_to( regaddr=self.__PRESCALE, out=bytearray([prescale]) ) # Value
     print("\tBack to awake mode")
     self.slave.write_to( regaddr=self.__MODE1, out=bytearray([oldmode])) # Restart sign
-  
+    
+  def setOCH(self):
+    self.OCH_mode = True
+
+    oldmode1 = self.read(self.__MODE1)
+    newmode1 = (oldmode1 & 0x7F) | 0x10        # sleep
+    # print("\tOld mode:0x%02X"%oldmode, " Mode to write:0x%02X"%newmode)
+
+    self.slave.write_to( regaddr=self.__MODE1, out=bytearray([newmode1])) # go to sleep
+
+    oldmode2 = self.read(self.__MODE2)
+    newmode2 = (oldmode2 | 0x08) # OCH ON/OFF
+
+    # print("\tWritting value: ",prescale,", to prescale reg ",hex(self.__PRESCALE))
+    self.slave.write_to( regaddr=self.__MODE2, out=bytearray([newmode2]) ) # Value
+
+    print("\tBack to awake mode")
+    self.slave.write_to( regaddr=self.__MODE1, out=bytearray([oldmode1])) # Restart sign
+    print("oldmode2: 0x%02X New:0x%02X" % (oldmode2, self.read(self.__MODE2)) )
+
   def getPWMFreq(self):
     cur_prescala = self.read(self.__PRESCALE)
     cur_freq = self.osc_clock/((cur_prescala+1)*4096)
@@ -224,44 +254,27 @@ class Pca9685_01(object):
 
     else:  
       port = self.__LED0_ON_L + (channel)*4
-      if self.debug: print('\nTesting channel: ',channel,'; Port: ',channel,'/',hex(channel))
+      # if self.debug: print('\nTesting channel: ',channel,'; Port: ',channel,'/',hex(channel))
       
       off_time =int((4096-1) * duty_ratio )# [off_time_H,off_time_L] = [0000,off_time(12Bit)]
       
       off_time_L = off_time & 0xFF
       off_time_H = off_time >> 8
-
-      # while False: # Old method
-      #   off_time_b_shortstr= bin(off_time)[2:] # ig: 819/0b1100110011/
-      #   len_off_t = len(off_time_b_shortstr)
-      #   if (len_off_t<12) and (len_off_t>0):
-      #     off_time_b = str("0"*(12-len_off_t)) + str(off_time_b_shortstr)
-      #   elif len_off_t == 12: off_time_b = off_time_b_shortstr
-      #   else: print("\n Err!: encoding err inside setChannelDutyRatio when encoding dutyretio in ez mode")
-        
-      #   off_time_b = str("0"*(4)) + off_time_b
-      #   len_off_time_b = len(off_time_b)
-      #   if not len_off_time_b == 16:  
-      #     print(off_time_b,"Len:",len_off_time_b)
-      #     print("Err: Encoding err, data not correct"); exit()
-      #   else: 
-      #     off_time_L = int(off_time_b[8:],2)
-      #     off_time_H = int(off_time_b[0:7],2)    
       
-      if stop_sending:
-        # self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value
-        # self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=False ) # Value
+      if stop_sending and (not self.OCH_mode):
+        self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value
+        self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=False ) # Value
         self.slave.write_to( regaddr=port+2, out=bytearray([off_time_L]),relax=False ) # Value
         self.slave.write_to( regaddr=port+3, out=bytearray([off_time_H])) # Value
+        print("S2")
       else:
-        # self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value
-        # self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=False ) # Value
+        self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value
+        self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=False ) # Value
         self.slave.write_to( regaddr=port+2, out=bytearray([off_time_L]),relax=False ) # Value
         self.slave.write_to( regaddr=port+3, out=bytearray([off_time_H]),relax=False) # Value
-    
     return []
 
-  def setDutyRatioCHS(self,channels,duty_ratio,stop_sending=True): # 20220815
+  def setDutyRatioCHS(self,channels,duty_ratio,stop_sending=False): # 20220815
     if len(channels) >= 1:
       for _ch in channels[:len(channels)-1]: 
         self.setDutyRatioCH(_ch,duty_ratio,stop_sending=False)

@@ -1,4 +1,6 @@
 
+from pickle import FALSE
+from re import T
 import time
 # sys.path.append("..")
 # from lib.pyftdi_mod import i2c as i2c
@@ -11,25 +13,41 @@ if __name__=='__main__':
   # Instantiate an I2C controller
   IIC_device = i2c.I2cController()
   # Configure the first interface (IF/1) of the FTDI device as an I2C master
-  IIC_device.configure('ftdi://ftdi:232h:0:FF/0') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+  IIC_device.configure('ftdi://ftdi:232h:0:FF/0',frequency=1E6) # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
 
   print('\n\n')
   pwm_addr = 0x40
-  pca9685 = PCA9685(IIC_device,debug=True,easy_mdoe=True)
-  # pca9685.reset()
-   
+  pca9685 = PCA9685(IIC_device,debug=False,easy_mdoe=True)
+  pca9685.reset()
+  # exit()
 
   pca9685.setPWMFreq(1526)
-  dr = 0.08
-  pca9685.setDutyRatioCH(12, duty_ratio=dr)
-  pca9685.setDutyRatioCH(0, duty_ratio=dr)
+  pca9685.setOCH()
+  # pca9685.reset()
+  # exit()
 
-  time.sleep(400000)
-  pca9685.setDutyRatioCH(0,0)
-  pca9685.setDutyRatioCH(4,0)
-  # pca9685.test_wires([4,12,0],[0],[0.1])
-  # pca9685.test_wires([4,12,0],[1,0],[20,0.1])
-  # 
+
+  dr = 1
+  t0 = time.time()
+  for _i in range(100):
+    
+    pca9685.setDutyRatioCHS([0], duty_ratio=_i/100,stop_sending=False) # 100 for 1.79 ->> 0.41794872283935547
+    # pca9685.setDutyRatioCH(15, duty_ratio=_i/100,stop_sending=True) # 100 for 0.13S
+  print(time.time()-t0)
+  pca9685.setDutyRatioCHS([15,0], duty_ratio=0,stop_sending=False) # 100 for 1.79
+
+  exit()
+
+  while True:
+    T = 0.00001
+    # time.sleep(T)
+    # pca9685.setDutyRatioCH(15, duty_ratio=dr)
+    pca9685.setDutyRatioCH(0, duty_ratio=dr)
+
+    # # time.sleep(T)
+    # pca9685.setDutyRatioCH(0,0)
+    # pca9685.setDutyRatioCH(4,0)
+ 
 
   exit()
 
