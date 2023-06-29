@@ -45,6 +45,7 @@ class Pca9685_01(object):
     self.osc_clock = 25000000.0
     self.easy_mdoe = easy_mdoe 
     self.OCH_mode = False
+    self.setOCH()
     self.reset()
 
 
@@ -305,10 +306,10 @@ class Pca9685_01(object):
     for _duty,_interval in zip(dutys,intervals) :
         print("PCA Setting Duty Ratio",channels,_duty,_interval)
         self.setDutyRatioCHS(channels,_duty)
-        print("DR set at:", time.time()- RUNTIME)
+        print("DR SET at:", time.time()- RUNTIME," Related to ",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)) )
 
         time.sleep(_interval)
         self.setDutyRatioCHS(channels,0)
-        print("DR Over at:", time.time()- RUNTIME)
+        print("DR OVER at:", time.time()- RUNTIME," Related to ",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)) )
 
 

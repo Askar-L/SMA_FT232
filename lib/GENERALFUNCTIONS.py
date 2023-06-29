@@ -4,16 +4,20 @@
 """
 General functions for all system
 """
+from msilib.schema import Font
+from tkinter import font
+from turtle import shapesize
 import numpy as np
 import os,time,sys
 from matplotlib import pyplot as plt
 from typing import Any, Iterable, Mapping, Optional, Tuple, Union
+from matplotlib.pyplot import MultipleLocator
 
 RUNTIME = time.time()
 FIG_FOLDER = "./IMG/"
 DATA_FOLDER = "./IMG/"
-FIG_SIZE = (12.8,8.00)#(19.2,10.8)
-FONTSIZE = 18
+FIG_SIZE = (38.4,21.6)#(21.6,14.4)#(19.2,10.8)
+FONTSIZE = 40
 
 class Logger(object):
     def __init__(self, filename=[]):
@@ -60,37 +64,43 @@ def saveFigure(data,file_name,labels,show_img=False,**kwargs: Mapping[str, Any])
  
     plt.rcParams.update({'font.size': FONTSIZE}) # 改变所有字体大小，改变其他性质类似
 
-    plt.figure(figsize=figsize)
+    plt.figure(figsize=figsize,dpi=100)
     plt.clf()
-    # plt.xticks(fontsize=FONTSIZE)
-    # plt.yticks(fontsize=FONTSIZE)
-
-    # # 设置坐标标签字体大小
-    # ax.set_xlabel( fontsize=FONTSIZE)
-    # ax.set_ylabel( fontsize=FONTSIZE)
-    # ax.legend(fontsize=FONTSIZE)
-
 
     if data_size[1] > 3 : # Muti-Dim(a,b,...,t)
+
         ax = plt.subplot(211)
         # plt.xticks(fontsize=FONTSIZE); plt.yticks(fontsize=FONTSIZE)
         # ax.legend(fontsize=FONTSIZE)
         
         for _i in range(3): i = _i+1; plt.plot(data_np[:,-1],data_np[:,i],label = labels[i])
         plt.legend(loc='upper center', ncol=3,frameon=False,shadow=False,framealpha=0)
-        
+        # plt.xlabel(labels[-1])
+
         ax = plt.subplot(212)
         # plt.xticks(fontsize=FONTSIZE); plt.yticks(fontsize=FONTSIZE)
         for _i in range(3): i = _i+4; plt.plot(data_np[:,-1],data_np[:,i],label = labels[i])
         # ax.legend(fontsize=FONTSIZE)
         plt.legend(loc='upper center', ncol=3,frameon=False,shadow=False,framealpha=0)
+        plt.xlabel(labels[-1])
 
 
-    else:
-        # One dim (x,t)
-        ax = plt.subplot(111)
+    else:         # One dim (x,t)
+        # ax = plt.subplot(111)
+        plt.rcParams.update({'font.size': int(FONTSIZE*1.4)}) # 改变所有字体大小，改变其他性质类似
+        x_locator = [MultipleLocator(2),MultipleLocator(0.2)] # Major / Minor
+
+        ax=plt.gca()
+        ax.xaxis.set_major_locator(x_locator[0]);ax.xaxis.set_minor_locator(x_locator[1])
+
+        # y_locator = [MultipleLocator(20),MultipleLocator(10)]
+        # ax.yaxis.set_major_locator(y_locator[0]);ax.yaxis.set_minor_locator(y_locator[1])
+
         plt.plot(data_np[:,-1],data_np[:,0],label =labels[0])
+        plt.scatter(data_np[:,-1],data_np[:,0],label =labels[0],s=10,alpha=0.4)
         plt.legend()
+        plt.grid(which="major"); plt.grid(which="minor",alpha=0.4)
+        plt.xlabel(labels[-1])
 
 
     f_type = "pdf"
@@ -100,8 +110,10 @@ def saveFigure(data,file_name,labels,show_img=False,**kwargs: Mapping[str, Any])
 
     print("Figure saving as: ",FIG_FOLDER+file_name)
     # plt.margins(0,0)
-    plt.savefig(file_url, dpi=1000,bbox_inches = 'tight',pad_inches=0.1)
+    plt.savefig(file_url,bbox_inches = 'tight',pad_inches=0.1)
     if show_img: plt.show()
     
+    # saveData(data,file_name,labels)
+
     return file_url
 

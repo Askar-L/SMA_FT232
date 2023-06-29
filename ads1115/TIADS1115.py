@@ -54,7 +54,7 @@ class TiAds1115_01(object): # TODO
     print((-t_start+t_end)/rounds," for AVG")
     
 
-    self.startConversion(is_continue=True,data_rate=1000,is_show=is_show)
+    self.startConversion(is_continue=True,data_rate=860,is_show=is_show)
     t_start = time.time()
     for _i in range(rounds): self.readSensors(is_show=is_show)
     t_end = time.time()
@@ -100,15 +100,18 @@ class TiAds1115_01(object): # TODO
     config_regH =_curr_mode[0]; config_regL= _curr_mode[1]
 
     if is_continue: # Continued mode
-      _data_rates = ([860,475,250,128,64,32,16,8]);_data_rates.reverse() # SPS
-      _codes = [0x7,0x6,0x5,0x4, 0x3,0x2,0x1,0x0];_codes.reverse()
-      for _mode,_code in zip(_data_rates,_codes): 
-        if _mode >= data_rate: break
-      
+      if not data_rate == 860:
+        _data_rates = ([860,475,250,128,64,32,16,8]);_data_rates.reverse() # SPS
+        _codes = [0x7,0x6,0x5,0x4, 0x3,0x2,0x1,0x0];_codes.reverse()
+        for _mode,_code in zip(_data_rates,_codes): 
+          if _mode >= data_rate: break
+      else : _code = 0x7
+
       config_regH = _curr_mode[0] & 0b11111110 # MODE -> 0(CONTINUES MODE)
       config_regL = (_curr_mode[1]& 0x1F)|_code<<5
 
-      self.slave.write_to(0x01,out=[ config_regH ,config_regL ])
+      self.slave.write_to(0x01,out=[ config_regH ,config_regL],relax=True)
+      # self.write()
       self.getState(is_show=True)
     else : # Single shot mode
       self.slave.write_to( regaddr=0x01 , out= [_curr_mode[0] | 0x80,_curr_mode[1]])
@@ -121,7 +124,6 @@ class TiAds1115_01(object): # TODO
 
     _modes = [0.256,0.256,0.256,0.512, 1.024,2.048,4.096,6.144]
     _codes = [0x7,0x6,0x5,0x4, 0x3,0x2,0x1,0x0]
-    
     for _mode,_code in zip(_modes,_codes): 
       if maxVoltage <= _mode: break
 
@@ -260,16 +262,21 @@ class HW526Angle(TiAds1115_01):
     # self.i2c_controller = i2c_controller
     self.calibrationData = []
     self.name = name
-    print(FIG_FOLDER)
     self.calib_file_url = DATA_FOLDER + name + ".json"
+    print("HW526:self.calib_file_url",self.calib_file_url)
+
     self.loadCalibration()
     pass
   
-  def loadCalibration(self,):
-    print("Loading calibration data from:",self.calib_file_url)
+  def loadCalibration(self,url=[]):
+    
+    if not url:
+      url = self.calib_file_url
+    print("Loading calibration data from:",url)
+
     try:
       # JSON到字典转化
-      _cali_file = open(self.calib_file_url, 'r')
+      _cali_file = open(url, 'r')
       _cali_data = json.load(_cali_file)
       print(type(_cali_data),_cali_data)
       self.model_k = _cali_data["a1"]
@@ -321,9 +328,6 @@ class HW526Angle(TiAds1115_01):
     res = []
     for _res in _reading: res.append( _res * self.model_k + self.model_b)
     return res
-
-
-
 
 if __name__=='__main__': # Test codes # Main process
     import os
