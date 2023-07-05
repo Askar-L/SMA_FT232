@@ -262,7 +262,7 @@ class HW526Angle(TiAds1115_01):
     # self.i2c_controller = i2c_controller
     self.calibrationData = []
     self.name = name
-    self.calib_file_url = DATA_FOLDER + name + ".json"
+    self.calib_file_url = CAL_FOLDER + name + ".json"
     print("HW526:self.calib_file_url",self.calib_file_url)
 
     self.loadCalibration()

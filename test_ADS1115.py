@@ -20,6 +20,7 @@ from ads1115.TIADS1115 import HW526Angle as ANGLESENSOR
 # Experiment settings
 if True: 
     MODE = "debug" # "expriment"
+    LABELS = ['Voltage' ]
 
     VOT = 20 # Vlots
     LOAD = 20 # Grams
@@ -31,7 +32,7 @@ if True:
     DUTYS_M = [1,0.3,0.3]# [1,0.2]   # [预热 响应 维持]c
     INTERVALS_M =[0.1,2,0.1]# [0.2,1]
 
-    DO_PLOT = False
+    DO_PLOT = True
     if DO_PLOT: TIME_OUT = 10000
     else: TIME_OUT = 5#13
 
@@ -41,7 +42,6 @@ if True:
 
     print('Multi process version of SMA finger')
     print(time.strftime('%Y:%m:%d %H:%M:%S', time.localtime()))
-    do_plot = DO_PLOT
     
 
     act_type = 2
@@ -68,65 +68,69 @@ if True:
 def sense_ADS1115( num_ch=1,i2c_sensor_controller_URL=[],angle_sensor_01=[],do_plot=False): # TODO
 
     ads_addr = 0x48 # ADS1115 address
-    check_interval = int(EXIT_CHECK_FREQ/0.017)
+    check_interval = int(EXIT_CHECK_FREQ/0.00017)
 
     if i2c_sensor_controller_URL==[]: angle_sensor_01 = findFtdiDevice(ads_addr)
     elif angle_sensor_01==[]:
         print("Configuring device ",str(i2c_sensor_controller_URL)," for experiment")
         i2c_device = i2c.I2cController()
-        i2c_device.force_clock_mode(True)
-        i2c_device.configure(i2c_sensor_controller_URL,frequency = 1400E3)
+        i2c_device.configure(i2c_sensor_controller_URL)
 
         # print("Max freq:",i2c_device.frequency_max)
         # exit()
 
-        angle_sensor_01 =ANGLESENSOR(i2c_device,name="angle_sensor_01",hs_mode=False)
+        # angle_sensor_01 =ANGLESENSOR(i2c_device,name="angle_sensor_01",hs_mode=False)
+        adc_01 =ANGLESENSOR(i2c_device,name="SSA_defalut")
+
         # sensor_device.reset()        
         
     # plt.ion()
     T,A0,A1,A2,A3 = [],[],[],[],[]
     # axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
 
-    if not isinstance(angle_sensor_01,ANGLESENSOR):print("Programe err! @ sense_ADS1115, pls check coding!"); exit()
+    adc_01.startConversion(data_rate=100,is_continue=True,is_show=False)
 
-    angle_sensor_01.startConversion(data_rate=100,is_continue=True,is_show=False)
-
-    # # Empty run for 1 sec
-    # t0 =  time.clock()
-    # while time.clock()-t0 < 0.3: sensor_device.readSensors(1)
-
+ 
     # while run
     _t=0
-    continue_senseing = True
-
-    all_data = []
-    
-    _i = 0
-    t_s = time.time()
-    while _i < 1000:
-        _i += 1
-        angle_sensor_01.slave.read_from(0x00,readlen=2*num_ch,relax=False)
-    t_end = time.time()
-    print(t_end-t_s)
-
-    # while continue_senseing:
-
-    #     reading = angle_sensor_01.readSensors(num_ch,is_show=False)
-    #     reading.append( time.time()- RUNTIME)
-    #     all_data.append( reading ) # 0.021474266052246095 S
  
-        
-    #     # Exit detecting
-    #     if _t % check_interval ==0: 
-    #        print("\rSensor reading, continued for: ",reading[-1],"s",end='')
-    #        if reading[-1] > TIME_OUT: 
-    #         print("\nSensor reading Over due to time out: ",TIME_OUT);continue_senseing = False
-    #     _t+=1
+
+    data = []
+
+    if DO_PLOT: 
+        plt.ion()
+        figsize = (12.8,7.2)#(19.2,10.8)
+        plt.figure(figsize=figsize)
+        plot_counter = 0
+
+    while DO_PLOT:
+        reading = adc_01.readSensors(is_show=False)
+        reading.append( time.time()- RUNTIME)
+        # print(time.time()- RUNTIME)
+
+        data.append( reading ) # 0.021474266052246095 S
+
+        if _t % check_interval ==0: 
+           print("\rSensor reading, continued for: ",reading[-1],"s",end='')
+           if reading[-1] > TIME_OUT: 
+            print("\nSensor reading Over due to time out: ",TIME_OUT);continue_senseing = False
+        _t+=1
+
+        if DO_PLOT:
+            plot_counter+=1
+            if plot_counter == 400:
+                plot_counter = 0            
+                    
+                data_np = np.array(data[-2000:]) # [-800]
  
-    #     pass
+                plt.clf(); A0.append(_t)
+                for _i in range(data_np.shape[1]-1): 
+                    plt.plot(data_np[:,-1],data_np[:,_i],label = LABELS[_i])
+                    # print(data_np[:,-1],data_np[:,_i],label = LABELS[_i])
+                plt.pause(0.001);plt.ioff()
     
     angle_sensor_01.i2c_controller.close()
-    return all_data
+    return data
 
 def sensorProcess(mode="ADC", num_ch=1, i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False): # NONE FIFO Version
     PROCESSRUNTIME = time.time()
@@ -162,4 +166,4 @@ if __name__=='__main__': # Test codes # Main process
 
     # mode == "debug"
     # if "debug" in MODE :
-    sensorProcess("ADC",1,url_1,[]); exit()
+    sensorProcess("ADC",1,url_1,[],do_plot=True); exit()

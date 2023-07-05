@@ -16,6 +16,7 @@ from matplotlib.pyplot import MultipleLocator
 RUNTIME = time.time()
 FIG_FOLDER = "./IMG/"
 DATA_FOLDER = "./IMG/"
+CAL_FOLDER = "./CAL/"
 FIG_SIZE = (38.4,21.6)#(21.6,14.4)#(19.2,10.8)
 FONTSIZE = 40
 

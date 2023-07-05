@@ -27,9 +27,9 @@ sys.stderr = sys.stdout		# redirect std err, if necessary
 
 if True: # Experiment settings
     
-    DO_PLOT = False
+    DO_PLOT = True
     if DO_PLOT: TIME_OUT = 10000
-    else: TIME_OUT = 15
+    else: TIME_OUT = 5
 
     VOT = 12 # Vlots
     LOAD = 20 # Grams
@@ -583,8 +583,8 @@ if __name__=='__main__': # Test codes # Main process
 
 
     if True:
-        # process_sensor_ADC = Process( target= sensorProcess, args=("Angle",url_Sensor,[],do_plot))
-        process_sensor_ADC = Process( target= sensorProcess, args=("Volta",url_Sensor,[],do_plot))
+        process_sensor_ADC = Process( target= sensorProcess, args=("Angle",url_Sensor,[],do_plot))
+        # process_sensor_ADC = Process( target= sensorProcess, args=("Volta",url_Sensor,[],do_plot))
 
         # process_sensor_IMU = Process( target= sensorProcess, args=("IMU",url_2,[],do_plot))
         process_ctrl = Process(target= ctrlProcess,args=(url_Control,))
