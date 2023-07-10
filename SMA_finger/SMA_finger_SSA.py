@@ -323,18 +323,26 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
         i2c_device = i2c.I2cController()
         i2c_device.configure(i2c_sensor_controller_URL)
 
+    # Modes
     if "Angle_01" in mode:
         adc_01 =ANGLESENSOR(i2c_device,name="angle_sensor_01")
         _url=[]
 
-    if "Angle_02" in mode:
+    elif "Angle_02" in mode:
         adc_01 =ANGLESENSOR(i2c_device,name="angle_sensor_02")
         _url=[]
 
     elif "Volta" in mode: 
         adc_01 =ANGLESENSOR(i2c_device,name="SSA_defalut")
         _url = CAL_FOLDER + "SSA_defalut" + ".json"
+    
+    elif "LoadCell" in mode:
+        
+        adc_01 =ANGLESENSOR(i2c_device,name="Load_cell")
+        adc_01.setRange(0) # Minrange
+        _url = CAL_FOLDER + "Load_cell" + ".json"
 
+        pass
         # sensor_device.reset()        
     # mode
     adc_01.loadCalibration(_url) # BUG!!!! TODO
@@ -398,7 +406,10 @@ def sensorProcess(mode="Angle_02",i2c_sensor_controller_URL=[],LSM_device=[],do_
     if "Angle" in mode: 
         labels = ['Joint Angle','Time']
         data = sense_ADS1115(url,[],do_plot,mode,labels)
-
+    elif "Load" in mode:
+        labels = ['Force','Time']
+        data = sense_ADS1115(url,[],do_plot,mode,labels) # LoadCell
+        pass
     elif mode =="Volta": 
         labels = ['Voltage','Time']
         data = sense_ADS1115(url,[],do_plot,mode,labels)
@@ -531,6 +542,7 @@ if __name__=='__main__': # Test codes # Main process
     url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0') 
     url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/0')
     url_2 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FD/1')
+    url_3 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FC/1')
 
     # MP on
     print("SMA Finger MultiProcess: \nTwo thread with Python threading library")
@@ -549,9 +561,10 @@ if __name__=='__main__': # Test codes # Main process
     # if True: sensorProcess("Angle_02",url_1,[],do_plot) # Calibration Range of rotational encoder
 
     if True:
-        process_sensor_Angle = Process( target= sensorProcess, args=("Angle_02",url_1,[],do_plot))
+        process_sensor_LoadCell = Process( target= sensorProcess, args=("LoadCell",url_1,[],do_plot)) # LoadCell
+        process_sensor_Angle = Process( target= sensorProcess, args=("Volta",url_2,[],do_plot)) # Volta
 
-        process_sensor_Volta = Process( target= sensorProcess, args=("Volta",url_2,[],do_plot))
+        process_sensor_Volta = Process( target= sensorProcess, args=("Angle_02",url_3,[],do_plot)) # Angle_02
 
         # process_sensor_IMU = Process( target= sensorProcess, args=("IMU",url_2,[],do_plot))
         process_ctrl = Process(target= ctrlProcess,args=(url_0,))
@@ -562,6 +575,9 @@ if __name__=='__main__': # Test codes # Main process
         process_sensor_Angle.start()
         
         process_sensor_Volta.start()
+
+        process_sensor_LoadCell.start()
+
         # process_sensor_IMU.start()
         time.sleep(0.2)
         process_ctrl.start()

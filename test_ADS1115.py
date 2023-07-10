@@ -166,4 +166,4 @@ if __name__=='__main__': # Test codes # Main process
 
     # mode == "debug"
     # if "debug" in MODE :
-    sensorProcess("ADC",1,url_1,[],do_plot=True); exit()
+    sensorProcess("ADC",1,url_0,[],do_plot=True); exit()
