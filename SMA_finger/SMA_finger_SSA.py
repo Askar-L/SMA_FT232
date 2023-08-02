@@ -18,7 +18,7 @@ import pyftdi.i2c as i2c
 
 from lsm6ds3.LSM6DS3 import Lsm6ds3_01 as IMUCHIP
 from pca9685.PCA9685 import Pca9685_01 as PWMGENERATOR
-from ads1115.TIADS1115 import HW526Angle as ANGLESENSOR
+from ads1115.TIADS1115 import HW526Angle as ANGLESENSOR 
 
 from lib.GENERALFUNCTIONS import *
 sys.stdout = Logger()
@@ -27,9 +27,10 @@ sys.stderr = sys.stdout		# redirect std err, if necessary
 
 if True: # Experiment settings
     
-    DO_PLOT = False
+    DO_PLOT = True
+    PLOT_LEN = 1600
     if DO_PLOT: TIME_OUT = 10000
-    else: TIME_OUT = 16
+    else: TIME_OUT = 5
 
     VOT = 12 # Vlots
     LOAD = 20 # Grams
@@ -340,6 +341,7 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
         
         adc_01 =ANGLESENSOR(i2c_device,name="Load_cell")
         adc_01.setRange(0) # Minrange
+        adc_01 # Going to 差分模式
         _url = CAL_FOLDER + "Load_cell" + ".json"
 
         pass
@@ -389,7 +391,7 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
 
                 plt.clf(); A0.append(_t)
                 for _i in range(data_np.shape[1]-1): 
-                    plt.plot(data_np[-800:,-1],data_np[-800:,_i],label = lables[_i])
+                    plt.plot(data_np[-PLOT_LEN:,-1],data_np[-PLOT_LEN:,_i],label = lables[_i])
                 plt.pause(0.001);plt.ioff()
         pass
     
@@ -561,10 +563,10 @@ if __name__=='__main__': # Test codes # Main process
     # if True: sensorProcess("Angle_02",url_1,[],do_plot) # Calibration Range of rotational encoder
 
     if True:
-        process_sensor_LoadCell = Process( target= sensorProcess, args=("LoadCell",url_1,[],do_plot)) # LoadCell
-        process_sensor_Angle = Process( target= sensorProcess, args=("Volta",url_2,[],do_plot)) # Volta
+        # process_sensor_LoadCell = Process( target= sensorProcess, args=("LoadCell",url_0,[],do_plot)) # LoadCell
+        process_sensor_Angle = Process( target= sensorProcess, args=("Volta",url_1,[],do_plot)) # Volta
 
-        process_sensor_Volta = Process( target= sensorProcess, args=("Angle_02",url_3,[],do_plot)) # Angle_02
+        # process_sensor_Volta = Process( target= sensorProcess, args=("Angle_02",url_2,[],do_plot)) # Angle_02
 
         # process_sensor_IMU = Process( target= sensorProcess, args=("IMU",url_2,[],do_plot))
         process_ctrl = Process(target= ctrlProcess,args=(url_0,))
@@ -574,13 +576,13 @@ if __name__=='__main__': # Test codes # Main process
         time.sleep(1)
         process_sensor_Angle.start()
         
-        process_sensor_Volta.start()
+        # process_sensor_Volta.start()
 
-        process_sensor_LoadCell.start()
+        # process_sensor_LoadCell.start()
 
         # process_sensor_IMU.start()
         time.sleep(0.2)
         process_ctrl.start()
 
 
-    pass
+    pass 

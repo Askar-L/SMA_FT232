@@ -87,7 +87,7 @@ def sense_ADS1115( num_ch=1,i2c_sensor_controller_URL=[],angle_sensor_01=[],do_p
     # plt.ion()
     T,A0,A1,A2,A3 = [],[],[],[],[]
     # axis_x,x_list,y_list,z_list,t_list = [],[],[],[],[]
-
+    adc_01.setRange(0) # Minrange
     adc_01.startConversion(data_rate=100,is_continue=True,is_show=False)
 
  
@@ -121,7 +121,7 @@ def sense_ADS1115( num_ch=1,i2c_sensor_controller_URL=[],angle_sensor_01=[],do_p
             if plot_counter == 400:
                 plot_counter = 0            
                     
-                data_np = np.array(data[-2000:]) # [-800]
+                data_np = np.array(data[-10000:]) # [-800]
  
                 plt.clf(); A0.append(_t)
                 for _i in range(data_np.shape[1]-1): 
@@ -166,4 +166,5 @@ if __name__=='__main__': # Test codes # Main process
 
     # mode == "debug"
     # if "debug" in MODE :
-    sensorProcess("ADC",1,url_0,[],do_plot=True); exit()
+    sensorProcess("LoadCell",url_0,[],do_plot=True); exit()        
+    # sensorProcess("ADC",1,url_0,[],do_plot=True); exit()        
