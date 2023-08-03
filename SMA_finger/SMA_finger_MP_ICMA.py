@@ -27,7 +27,7 @@ sys.stderr = sys.stdout		# redirect std err, if necessary
 
 if True: # Experiment settings
     
-    DO_PLOT = True
+    DO_PLOT = False
     if DO_PLOT: TIME_OUT = 10000
     else: TIME_OUT = 5
 
@@ -166,8 +166,8 @@ def ctrlProcess(i2c_actuator_controller_URL=[]): # PCA
     elif actuator_device==[]: 
         i2c_device = i2c.I2cController()
         # print(i2c_actuator_controller_URL)
-        i2c_device.configure(i2c_actuator_controller_URL)
-        actuator_device = PWMGENERATOR(i2c_device,debug=False)
+        i2c_device.configure(i2c_actuator_controller_URL) # On IIC 
+        actuator_device = PWMGENERATOR(i2c_device,debug=False) # Link PCA9685
         actuator_device.reset()
 
     # Set wire initial state
@@ -567,6 +567,7 @@ if __name__=='__main__': # Test codes # Main process
     url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0') 
     url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/0')
     url_2 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FD/1')
+    url_3 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FC/1')
 
     # MP on
     print("SMA Finger MultiProcess: \nTwo thread with Python threading library")
@@ -583,15 +584,19 @@ if __name__=='__main__': # Test codes # Main process
 
 
     if True:
-        process_sensor_ADC = Process( target= sensorProcess, args=("Angle",url_Sensor,[],do_plot))
+
+        process_sensor_ADC = Process( target= sensorProcess, args=("Angle",url_1,[],do_plot))
         # process_sensor_ADC = Process( target= sensorProcess, args=("Volta",url_Sensor,[],do_plot))
 
-        # process_sensor_IMU = Process( target= sensorProcess, args=("IMU",url_2,[],do_plot))
-        process_ctrl = Process(target= ctrlProcess,args=(url_Control,))
-        
+        process_sensor_IMU = Process( target= sensorProcess, args=("IMU",url_2,[],do_plot))
+
+        process_ctrl = Process(target= ctrlProcess,args=(url_0,))     
+
+
 
         process_sensor_ADC.start()
         # process_sensor_IMU.start()
+
         time.sleep(0.6)
         process_ctrl.start()
 
