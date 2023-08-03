@@ -29,7 +29,7 @@ if True: # Experiment settings
     
     DO_PLOT = False
     if DO_PLOT: TIME_OUT = 10000
-    else: TIME_OUT = 5
+    else: TIME_OUT = 10
 
     VOT = 12 # Vlots
     LOAD = 20 # Grams
@@ -219,14 +219,23 @@ def experiment_ICMA(actuator_device): # ICMA
 
     pass
 
-def experiment_optimizer(actuator_device):
-
+def experiment_optimizer(actuator_device): # KOEDA
+    # Heat up
     wire_channles_p = [4,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
-    dutys_P = [0.3,0]#[0.4,0, 0.35,0, 0.30,0 ,0.25,0, 0.20,0 ,0.15,0 ]
-    intervals_P = [2,4]#[2,4, 2,4 ,2,4, 2,4, 2,4, 2,4]#[0.4,2,2,2 ,2,2,2,2,4]
+    dutys_P = [0.05,1]#[0.4,0, 0.35,0, 0.30,0 ,0.25,0, 0.20,0 ,0.15,0 ]
+    intervals_P = [1,0.4]#[2,4, 2,4 ,2,4, 2,4, 2,4, 2,4]#[0.4,2,2,2 ,2,2,2,2,4]
     
     print_info(dutys_P,intervals_P)
     actuator_device.test_wires(wire_channles_p,dutys_P,intervals_P,conf0=True)
+
+    # Cool down
+    wire_channles_p = [12,14,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
+    dutys_P = [0.6,0]#[0.4,0, 0.35,0, 0.30,0 ,0.25,0, 0.20,0 ,0.15,0 ]
+    intervals_P = [5,0.1]#[2,4, 2,4 ,2,4, 2,4, 2,4, 2,4]#[0.4,2,2,2 ,2,2,2,2,4]
+    
+    print_info(dutys_P,intervals_P)
+    actuator_device.test_wires(wire_channles_p,dutys_P,intervals_P,conf0=True)
+
 
     pass
 
@@ -595,7 +604,7 @@ if __name__=='__main__': # Test codes # Main process
 
 
         process_sensor_ADC.start()
-        # process_sensor_IMU.start()
+        process_sensor_IMU.start()
 
         time.sleep(0.6)
         process_ctrl.start()
