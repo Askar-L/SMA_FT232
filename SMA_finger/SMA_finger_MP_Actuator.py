@@ -6,7 +6,7 @@
 # Modified @20230221: Add logger
 
 # General funcs
-import os,sys,time
+import os,sys,time,multiprocessing
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -24,14 +24,18 @@ from lib.GENERALFUNCTIONS import *
 sys.stdout = Logger()
 sys.stderr = sys.stdout		# redirect std err, if necessary
 
+# Test settings
+import pyftdi.ftdi as ftdi
+from multiprocessing import  Process
+
 
 if True: # Experiment settings
     
     DO_PLOT = False
     if DO_PLOT: TIME_OUT = 10000
-    else: TIME_OUT = 10
+    else: TIME_OUT = 20
 
-    VOT = 12 # Vlots
+    VOT = 9 # Vlots
     LOAD = 20 # Grams
 
     EXIT_CHECK_FREQ = 1 #S, EXIT check!
@@ -65,91 +69,86 @@ def print_info(dutys_P,intervals_P):
 
     print("\n\n")
 
-class SMAfingerMP_01(object):
+# class SMAfingerMP_01(object):
 
-    def __init__(self, i2c_controller=i2c.I2cController(),address=0x40, reset = False,debug=False):
-        # print("New PCA9685 IIC slave created: ",hex(address))
+#     def __init__(self, i2c_controller=i2c.I2cController(),address=0x40, reset = False,debug=False):
+#         # print("New PCA9685 IIC slave created: ",hex(address))
         
-        # Address Setting
-        lsm_addr = 0x6b # Gryoscope address
-        pca_addr = 0x40 # PWM device address
+#         # Address Setting
+#         lsm_addr = 0x6b # Gryoscope address
+#         pca_addr = 0x40 # PWM device address
 
-        wire_freq = 1000 # PWM freq for wire controling
-        wire_channles = [12,14,0] # [Wire 1; Wire 2;Indicating LED]
+#         wire_freq = 1526 # Default PWM freq for wire controling
+#         wire_channles = [12,14,0] # [Wire 1; Wire 2;Indicating LED]
 
-        self.lsm_list, self.pca_list = [],[]
-        # Instantiate an I2C controller
-        i2c_controller = i2c.I2cController() # Create 
+#         self.lsm_list, self.pca_list = [],[]
+#         # Instantiate an I2C controller
+#         i2c_controller = i2c.I2cController() # Create 
 
-        # Open port
-        # i2c_controller.configure()
-        i2c_controller.configure('ftdi://ftdi:232h/') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
-        # USB\VID_0403&PID_6014\6&263914d5&0&2
-        # USB\VID_0403&PID_6014\6&263914d5&0&1
+#         # Open port
+#         # i2c_controller.configure()
+#         i2c_controller.configure('ftdi://ftdi:232h/') # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+#         # USB\VID_0403&PID_6014\6&263914d5&0&2
+#         # USB\VID_0403&PID_6014\6&263914d5&0&1
 
-        print('\n\n')
-        lsm6ds3_A = IMUCHIP(i2c_controller,lsm_addr); lsm6ds3_A.reset()
-        pca9685_A = PWMGENERATOR(i2c_controller,pca_addr,debug=False); pca9685_A.reset()
+#         print('\n\n')
+#         lsm6ds3_A = IMUCHIP(i2c_controller,lsm_addr); lsm6ds3_A.reset()
+#         pca9685_A = PWMGENERATOR(i2c_controller,pca_addr,debug=False); pca9685_A.reset()
 
-        self.lsm_list.append(lsm6ds3_A)
-        self.pca_list.append(pca9685_A)
+#         self.lsm_list.append(lsm6ds3_A)
+#         self.pca_list.append(pca9685_A)
 
-        # Set wire initial state
-        pca9685_A.setPWMFreq(wire_freq); dutys = [0] # [预热 响应 维持]
-        intervals = [0.1]; pca9685_A.test_wires(wire_channles,dutys,intervals,conf0=True)
+#         # Set wire initial state
+#         pca9685_A.setPWMFreq(wire_freq); dutys = [0] # [预热 响应 维持]
+#         intervals = [0.1]; pca9685_A.test_wires(wire_channles,dutys,intervals,conf0=True)
 
-        pass
+#         pass
     
-    def calibrate(self): # 三轴角度校准
-        pass
+#     def calibrate(self): # 三轴角度校准
+#         pass
 
-    def get_angle(self): # 静态角度获取
-        lsm = self.lsm_list[0]
-        reading = lsm.readSensors(1)
-        print(reading)
-        pass
+#     def get_angle(self): # 静态角度获取
+#         lsm = self.lsm_list[0]
+#         reading = lsm.readSensors(1)
+#         print(reading)
+#         pass
     
-    def drive_axis(self,dutyRatio,time):
-        # _st = time.time()
-        # self.pca_list[0].
-        pass
+#     def drive_axis(self,dutyRatio,time):
+#         # _st = time.time()
+#         # self.pca_list[0].
+#         pass
 
-    def to_angle(self,tar_angle): # 到达目标角度
-        # 计算目前角度
-        angle_curr = self.get_angle()
-        return []
-        angle_diff = angle_curr - tar_angle
+#     def to_angle(self,tar_angle): # 到达目标角度
+#         # 计算目前角度
+#         angle_curr = self.get_angle()
+#         return []
+#         angle_diff = angle_curr - tar_angle
         
-        accuracy = 0.5 # 角度控制精度
+#         accuracy = 0.5 # 角度控制精度
 
-        while abs(angle_diff) > accuracy:
+#         while abs(angle_diff) > accuracy:
             
-            if angle_diff > 0: # angle_diff > accuracy
-                pass
-            else:  # angle_diff < -accuracy
-                pass
+#             if angle_diff > 0: # angle_diff > accuracy
+#                 pass
+#             else:  # angle_diff < -accuracy
+#                 pass
 
-            # out put pwm # 驱动
-            angle_curr = self.get_angle() # 检测
-            pass
-        pass
+#             # out put pwm # 驱动
+#             angle_curr = self.get_angle() # 检测
+#             pass
+#         pass
 
 # Start of program
 
-# Test settings
-import pyftdi.ftdi as ftdi
-from multiprocessing import  Process
 
-def ctrlProcess(i2c_actuator_controller_URL=[]): # PCA 
+def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_share_dict={}): # PCA 
     
     PROCESSRUNTIME = time.time()
     print("\nCtrlProcess Starts:",PROCESSRUNTIME)
     print("\t",PROCESSRUNTIME- RUNTIME,"s after runtime:",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)))
     
-    
     # Address Setting
     pca_addr = 0x40 # PWM device address
-
     wire_freq = 1526 # PWM freq for wire controling
     # wire_channles = [12,0] # [Wire 1; Wire 2;Indicating LED]
 
@@ -157,8 +156,7 @@ def ctrlProcess(i2c_actuator_controller_URL=[]): # PCA
     # i2c_actuator_controller = i2c.I2cController() # Create 
     # # Open port
     # i2c_actuator_controller.configure(i2c_url)
-    actuator_device=[]
- 
+    actuator_device=[] 
     # actuator_device = PCA(i2c_actuator_controller,pca_addr,debug=False); actuator_device.reset()
     if i2c_actuator_controller_URL==[]:
         print('Empty input of i2c_actuator_controller_URL, finding URL')
@@ -171,74 +169,38 @@ def ctrlProcess(i2c_actuator_controller_URL=[]): # PCA
         actuator_device.reset()
 
     # Set wire initial state
-    actuator_device.setPWMFreq(wire_freq)
-    
-    # dutys = [0.1] # [预热 响应 维持]
-    # intervals = [1]
-    # actuator_device.test_wires([12,0],dutys,intervals,conf0=True)
-    
-    # experiment
-    # experment_fan(actuator_device)
-    # experiment_0(actuator_device,[4,6,0])
-    
-    # experiment_ICMA(actuator_device) # ICMA
-    experiment_optimizer(actuator_device) # ICMA
-
-    
+    actuator_device.setPWMFreq(wire_freq) 
+    experiment_actuators(actuator_device)     
     actuator_device.i2c_controller.close()
-    pass
+    pass 
+ 
+def showMPTest(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_share_dict={}):
+    while True:
+        print(process_share_dict[angle_sensor_ID])
+    pass 
+    
 
-def experment_fan(actuator_device):
-    dutys = [1,0.3,0] # [预热 响应 维持]
-    intervals = [0.4,8,0.1]
-    actuator_device.test_wires([6,12,0],dutys,intervals,conf0=True)
-
-def experiment_0(actuator_device,wire_channles):
-    dutys = DUTYS_P # [预热 响应 维持]
-    intervals = INTERVALS_P
-    # actuator_device.res
-    actuator_device.test_wires(wire_channles,dutys,intervals,conf0=True)
-    pass
-
-def experiment_ICMA(actuator_device): # ICMA 
-    wire_channles_P = [4,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
-    wire_channles_M = [6,0]
+def experiment_actuators(actuator_device): # Actuators Experiment 1
+    wire_channles_P = [12,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
+    # fan_channles = [4,6] 
     
     # Positive derections
-    DUTYS_P = [0.09,1,0.2,0.14,0.1,0]# [1,0.2]   # [预热 响应 维持]c 
-    INTERVALS_P =[1,0.3,2,2,2,2]# [0.2,1]
+    DUTYS_P = [0.4,0]# [1,0.2]   # [预热 响应 维持]c 
+    INTERVALS_P =[2,0.1]# [0.2,1]
     
-    # Reversed derections
-    DUTYS_M = [1,0.3]# [1,0.2]   # [预热 响应 维持]c
-    INTERVALS_M =[0.2,2]# [0.2,1]
+    # # Reversed derections
+    # DUTYS_M = [1,0.3]# [1,0.2]   # [预热 响应 维持]c
+    # INTERVALS_M =[0.2,2]# [0.2,1]
 
-    print_info()
+    print_info(DUTYS_P,INTERVALS_P)
+    # actuator_device.test_wires(fan_channles,DUTYS_P,INTERVALS_P,conf0=True)
+    
     actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,conf0=True)
     # Extensor direction: DR [1,0.3] Duration [0.2,2]
-    actuator_device.test_wires(wire_channles_M,DUTYS_M,INTERVALS_M,conf0=True)
+    # actuator_device.test_wires(wire_channles_M,DUTYS_M,INTERVALS_M,conf0=True)
 
     pass
-
-def experiment_optimizer(actuator_device): # KOEDA
-    # Heat up
-    wire_channles_p = [4,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
-    dutys_P = [0.05,1]#[0.4,0, 0.35,0, 0.30,0 ,0.25,0, 0.20,0 ,0.15,0 ]
-    intervals_P = [1,0.4]#[2,4, 2,4 ,2,4, 2,4, 2,4, 2,4]#[0.4,2,2,2 ,2,2,2,2,4]
-    
-    print_info(dutys_P,intervals_P)
-    actuator_device.test_wires(wire_channles_p,dutys_P,intervals_P,conf0=True)
-
-    # Cool down
-    wire_channles_p = [12,14,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
-    dutys_P = [0.6,0]#[0.4,0, 0.35,0, 0.30,0 ,0.25,0, 0.20,0 ,0.15,0 ]
-    intervals_P = [5,0.1]#[2,4, 2,4 ,2,4, 2,4, 2,4, 2,4]#[0.4,2,2,2 ,2,2,2,2,4]
-    
-    print_info(dutys_P,intervals_P)
-    actuator_device.test_wires(wire_channles_p,dutys_P,intervals_P,conf0=True)
-
-
-    pass
-
+ 
 def sensor_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False,lables=[]): # NONE FIFO Version
     # LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
 
@@ -361,7 +323,7 @@ def sense_LSM_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     sensor_device.i2c_controller.close()
     return data
 
-def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],lables=[]): # TODO
+def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],lables=[],sensor_ID="ADC000",process_share_dict={}): # TODO
     print("sense_ADS1115 starts at: ",time.time()- RUNTIME,"s, Related to ",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)) )
     ads_addr = 0x48 # ADS1115 address
     check_interval = int(EXIT_CHECK_FREQ/0.0008)
@@ -391,7 +353,7 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
     adc_01.startConversion(data_rate=860,is_continue=True,is_show=False)    
     # # Empty run for 1 sec
     # t0 =  time.clock()
-    # while time.clock()-t0 < 0.3: sensor_device.readSensors(1)
+    # while time.clock()-t0 < 0.3: sensor_device.readSensors(1) 
 
     # while run
     _t=0
@@ -404,13 +366,18 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
 
     data = []
     if do_plot: plot_counter = 0
+
+    # temp_i = 0
     while continue_senseing:
         reading = adc_01.readSensors(is_show=False)
         reading.append( time.time()- RUNTIME)
-        # print(time.time()- RUNTIME)
 
         data.append( reading ) # 0.021474266052246095 S
-        # print(reading)
+        process_share_dict[sensor_ID] = reading
+        # print(temp_i,process_share_dict[sensor_ID]);temp_i += 1
+
+        # process_share_dict.update({sensor_ID:reading})
+
 
         if _t % check_interval ==0: 
            print("\rSensor reading, continued for: ",reading[-1],"s",end='')
@@ -433,7 +400,7 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
     adc_01.i2c_controller.close()
     return data
 
-def sensorProcess(mode="Angle",i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False): # NONE FIFO Version
+def sensorProcess(mode="Angle",i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False,sensor_ID="SNS000",process_share_dict={}): # NONE FIFO Version
     PROCESSRUNTIME = time.time()
     url = i2c_sensor_controller_URL
 
@@ -442,11 +409,11 @@ def sensorProcess(mode="Angle",i2c_sensor_controller_URL=[],LSM_device=[],do_plo
 
     if mode =="Angle": 
         labels = ['Joint Angle','Time']
-        data = sense_ADS1115(url,[],do_plot,mode,labels)
+        data = sense_ADS1115(url,[],do_plot,mode,labels,sensor_ID,process_share_dict)
 
     elif mode =="Volta": 
         labels = ['Voltage','Time']
-        data = sense_ADS1115(url,[],do_plot,mode,labels)
+        data = sense_ADS1115(url,[],do_plot,mode,labels,sensor_ID,process_share_dict)
 
     elif mode =="IMU": 
         labels = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
@@ -572,6 +539,8 @@ if __name__=='__main__': # Test codes # Main process
 
         # expriment setting log
 
+  
+
     # Start of IIC comunication
     url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0') 
     url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/0')
@@ -592,22 +561,25 @@ if __name__=='__main__': # Test codes # Main process
     else : print("Found USB FT232H device @:",url_Control,url_Sensor) 
 
 
-    if True:
-
-        process_sensor_ADC = Process( target= sensorProcess, args=("Angle",url_1,[],do_plot))
+    with multiprocessing.Manager() as process_manager:
+        process_share_dict = process_manager.dict()
+        angle_sensor_ID = 'ADC001'
+        
+        process_sensor_ADC = multiprocessing.Process( target= sensorProcess, args=("Angle",url_1,[],do_plot,'ADC001',process_share_dict))
         # process_sensor_ADC = Process( target= sensorProcess, args=("Volta",url_Sensor,[],do_plot))
+        # process_sensor_IMU = Process( target= sensorProcess, args=("IMU",url_2,[],do_plot))
 
-        process_sensor_IMU = Process( target= sensorProcess, args=("IMU",url_2,[],do_plot))
+        process_ctrl = multiprocessing.Process(target= ctrlProcess,args=(url_0,'ADC001',process_share_dict))     
 
-        process_ctrl = Process(target= ctrlProcess,args=(url_0,))     
-
-
+        process_ctrl = multiprocessing.Process(target= showMPTest,args=(url_0,'ADC001',process_share_dict))     
 
         process_sensor_ADC.start()
-        process_sensor_IMU.start()
+        # process_sensor_IMU.start()
 
         time.sleep(0.6)
         process_ctrl.start()
+
+        process_sensor_ADC.join()
 
 
     pass
