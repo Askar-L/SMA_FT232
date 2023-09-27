@@ -33,7 +33,7 @@ if True: # Experiment settings
     
     DO_PLOT = False
     if DO_PLOT: TIME_OUT = 10000
-    else: TIME_OUT = 20
+    else: TIME_OUT = 2
 
     VOT = 9 # Vlots
     LOAD = 20 # Grams
@@ -139,46 +139,117 @@ def print_info(dutys_P,intervals_P):
 #         pass
 
 # Start of program
-
-
-def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_share_dict={}): # PCA 
-    
-    PROCESSRUNTIME = time.time()
-    print("\nCtrlProcess Starts:",PROCESSRUNTIME)
-    print("\t",PROCESSRUNTIME- RUNTIME,"s after runtime:",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)))
-    
-    # Address Setting
-    pca_addr = 0x40 # PWM device address
-    wire_freq = 1526 # PWM freq for wire controling
-    # wire_channles = [12,0] # [Wire 1; Wire 2;Indicating LED]
-
-    # # Instantiate an I2C controller
-    # i2c_actuator_controller = i2c.I2cController() # Create 
-    # # Open port
-    # i2c_actuator_controller.configure(i2c_url)
-    actuator_device=[] 
-    # actuator_device = PCA(i2c_actuator_controller,pca_addr,debug=False); actuator_device.reset()
-    if i2c_actuator_controller_URL==[]:
-        print('Empty input of i2c_actuator_controller_URL, finding URL')
-        actuator_device = findFtdiDevice(pca_addr)
-    elif actuator_device==[]: 
-        i2c_device = i2c.I2cController()
-        # print(i2c_actuator_controller_URL)
-        i2c_device.configure(i2c_actuator_controller_URL) # On IIC 
-        actuator_device = PWMGENERATOR(i2c_device,debug=False) # Link PCA9685
-        actuator_device.reset()
-
-    # Set wire initial state
-    actuator_device.setPWMFreq(wire_freq) 
-    experiment_actuators(actuator_device)     
-    actuator_device.i2c_controller.close()
-    pass 
  
-def showMPTest(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_share_dict={}):
+def showMPTestProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_share_dict={}):
     while True:
         print(process_share_dict[angle_sensor_ID])
     pass 
+
+def findFtdiDevice(addr): # find corresbonding device 
+    device = []
+    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1')  # ftdi://ftdi:232h:0/1
+    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1') 
+    # ftdi://ftdi:232h/1 ftdi:///1 'ftdi://ftdi:232h:1'
+
+    # address = os.environ.get('I2C_ADDRESS', '0x50').lower()
+    # addr = int(address, 16 if address.startswith('0x') else 10) # into dec
+    # # print("\address \t",address)
+    # # print("\addr \t",addr)
     
+    i2c_device_0 = i2c.I2cController();i2c_device_1 = i2c.I2cController()
+    i2c_device_0.configure(url_0,frequency = 400E3)
+    i2c_device_1.configure(url_1,frequency = 400E3)
+    
+    if addr == 0x40: # PCA 
+        try: 
+            device = PWMGENERATOR(i2c_device_0,addr,debug=False); device.reset()
+        except Exception as err: 
+            print("\nErr @0x40",err)
+            device = PWMGENERATOR(i2c_device_1,addr,debug=False); device.reset()
+
+    elif addr == 0x6b: # Gryoscope address
+        try: 
+            device =IMUCHIP(i2c_device_0); device.reset()
+        except Exception as err:
+            print("\nErr @0x6b",err)
+            
+            device = IMUCHIP(i2c_device_1); device.reset()
+
+    return device
+
+def findFtdiAddr(): 
+    # find corresbonding device 
+    # https://eblot.github.io/pyftdi/urlscheme.html
+    print('Finding correspoonding FTDI addr')
+    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1')  # ftdi://ftdi:232h:0/1
+    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1') 
+    # url_2 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FD/1') 
+
+    url_list = [url_0,url_1]
+
+    i2c_addr_PCA = 0x40
+    i2c_addr_LSM = 0x6b
+    addr_PCA,addr_LSM = [],[]
+    _PCA_device,_LSM_device = [],[] 
+    device_list = []
+    # for _url in url_list: device_list.append(i2c.I2cController())
+
+    # for _device in device_list:
+    _device = i2c.I2cController()
+    for _url in url_list:
+        try:
+            _device.configure(_url,frequency = 400E3)
+            _PCA_device = PWMGENERATOR(_device); _PCA_device.reset()
+            # _PCA_device.testChannle(0)
+            addr_PCA = _url
+            url_list.remove(_url)
+            print("Found PCA addr:",addr_PCA)
+            break
+        except Exception as err:  continue
+
+    # for _device in device_list:
+    for _url in url_list:
+        try:
+            _device.configure(_url,frequency = 400E3)
+            _LSM_device = IMUCHIP(_device); _LSM_device.reset()
+            addr_LSM = _url
+            url_list.remove(_url)
+            print("Found LSM addr:",addr_LSM)
+            break
+        except Exception as err:  continue
+    
+    return addr_PCA,addr_LSM,_PCA_device,_LSM_device
+
+def i2c_test():
+
+    usb_tool = ftdi.UsbTools()
+    ftdi_devices = usb_tool.find_all( [[1027,24596]])
+    # ftdi_devices = usb_tool.find_all([[1027]])
+    print("\n",ftdi_devices)
+
+    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1') 
+    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1') 
+    # s.environ.get('FTDI_DEVICE','USB\VID_0403&PID_6014\6&263914D5&0&2') # ftdi:// [1027][:[24596][:|:0:254|:]] /1
+
+    i2c_device_0 = i2c.I2cController();i2c_device_1 = i2c.I2cController()
+    i2c_device_0.configure(url_0,frequency = 400E3)
+    i2c_device_0.configure(url_1,frequency = 400E3)
+
+    #Ftdi Addr
+    # devices = pyftdi.list_devices()
+    # print(devices)
+ 
+    # 'ftdi://{}:{}:{}/{}'.format(idn.vid,idn.pid,idn.sn, idn.address)
+    # ftdi://[vendor][:[product][:serial|:bus:address|:index]]/interface
+    # ftdi[:232h[: :0:254|:]]/1
+
+    # ftdi://1027:24569:
+    # USB\VID_0403&PID_6014\6&263914d5&0&2 
+        # ftdi://[VID_0403][:[PID_6014][:serial|:bus:address|:index]]/interface
+    # USB\VID_0403&PID_6014\6&263914d5&0&1
+
+    return []
+
 
 def experiment_actuators(actuator_device): # Actuators Experiment 1
     wire_channles_P = [12,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
@@ -346,7 +417,6 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
     # mode
     adc_01.loadCalibration(_url) # BUG!!!! TODO
 
-    
     T,A0,A1,A2,A3 = [],[],[],[],[]
     # if not isinstance(angle_sensor_01,ANGLESENSOR):print("Programe err! @ sense_ADS1115, pls check coding!"); exit() 
 
@@ -400,7 +470,7 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
     adc_01.i2c_controller.close()
     return data
 
-def sensorProcess(mode="Angle",i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False,sensor_ID="SNS000",process_share_dict={}): # NONE FIFO Version
+def sensorProcess(mode="Angle",i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False,sensor_ID="SNS000",save_data = True,process_share_dict={}): # NONE FIFO Version
     PROCESSRUNTIME = time.time()
     url = i2c_sensor_controller_URL
 
@@ -408,138 +478,181 @@ def sensorProcess(mode="Angle",i2c_sensor_controller_URL=[],LSM_device=[],do_plo
     print("\t",PROCESSRUNTIME- RUNTIME,"s after runtime:",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)))
 
     if mode =="Angle": 
-        labels = ['Joint Angle','Time']
+        labels = ['Joint Angle','Time'];figure_mode = 'Single'
         data = sense_ADS1115(url,[],do_plot,mode,labels,sensor_ID,process_share_dict)
 
     elif mode =="Volta": 
-        labels = ['Voltage','Time']
+        labels = ['Voltage','Time']; figure_mode = 'Single'
         data = sense_ADS1115(url,[],do_plot,mode,labels,sensor_ID,process_share_dict)
 
     elif mode =="IMU": 
         labels = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
         data = sensor_LSM6DS3(url,LSM_device,do_plot,labels)
-        
-    # data = sense_LSM6DS3(i2c_sensor_controller_URL,LSM_device,do_plot)
-    # data = sense_FIFO(i2c_sensor_controller_URL,do_plot)
+        figure_mode = 'Double'
+        # data = sense_LSM6DS3(i2c_sensor_controller_URL,LSM_device,do_plot)
+        # data = sense_FIFO(i2c_sensor_controller_URL,do_plot)
+
+    if save_data:
+        file_name = mode+time.strftime("_%b%d_%H.%M.%S",time.localtime(RUNTIME))
+
+    # saveData(data,file_name,labels)
+    # saveFigure(data,file_name,labels,figure_mode=figure_mode)
+
+def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_share_dict={}): # PCA 
+    
+    PROCESSRUNTIME = time.time()
+    print("\nCtrlProcess Starts:",PROCESSRUNTIME)
+    print("\t",PROCESSRUNTIME- RUNTIME,"s after runtime:",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)))
+    
+    # Address Setting
+    pca_addr = 0x40 # PWM device address
+    wire_freq = 1526 # PWM freq for wire controling
+    # wire_channles = [12,0] # [Wire 1; Wire 2;Indicating LED]
+
+    # # Instantiate an I2C controller
+    # i2c_actuator_controller = i2c.I2cController() # Create 
+    # # Open port
+    # i2c_actuator_controller.configure(i2c_url)
+    actuator_device=[] 
+    # actuator_device = PCA(i2c_actuator_controller,pca_addr,debug=False); actuator_device.reset()
+    if i2c_actuator_controller_URL==[]:
+        print('Empty input of i2c_actuator_controller_URL, finding URL')
+        actuator_device = findFtdiDevice(pca_addr)
+    elif actuator_device==[]: 
+        i2c_device = i2c.I2cController()
+        # print(i2c_actuator_controller_URL)
+        i2c_device.configure(i2c_actuator_controller_URL) # On IIC 
+        actuator_device = PWMGENERATOR(i2c_device,debug=False) # Link PCA9685
+        actuator_device.reset()
+
+    # Set wire initial state
+    actuator_device.setPWMFreq(wire_freq) 
+    experiment_actuators(actuator_device)     
+    actuator_device.i2c_controller.close()
+    pass 
+
+def pid_to(target_angle,get_angle,apply_DR):
+    from simple_pid import PID
+
+    # ratio = 0.02
+    (k_p, k_i, k_d) = (160,280,2.8)#(16,20.5,0.28)# (3.8,10,0.1)#Extensor (2.8,4,0.02) Flexor(2.5,2.35,0.068) # (60,80,4) *0.02 (160,80,3)
+    # (k_p, k_i, k_d) = (k_p*ratio, k_i*ratio,k_d*ratio)
+    DR_limit = 100/2
+    limit_DR =  (-DR_limit,DR_limit)                    
+    durance = TIME_OUT -0.5
+    # P调大，反应速度快了，但是出现了超调，指针出现抖动，
+    # I调大，在原来基础上，误差变小了
+    # D调大，反应速度慢了，但是抖动消失了，且指针存在一定误差（没和下面对准）
+    # 初始PWM占空比和目标角度
+    dutyRatio = 0  # 读取到当前的PWM 占空比 # (个人习惯)占空比 此处采用DR(dutyRatio)
+    
+    contorller = PID(k_p, k_i, k_d,sample_time=1/2400,output_limits= limit_DR) # # 创建PID控制器
+    contorller.setpoint = target_angle
+
+    time_st = time.time()
+    ctrl_DR_history = []
+    while time.time() - time_st < durance:
+        current_angle = get_angle()  # 获取当前角度
+        # print(current_angle,current_DR)
+        while True: # abs(current_angle - target_angle) > 0.05
+            current_angle = get_angle()  # 获取当前角度
+                     
+            # current_DR = pid_pwm_control(contorller,current_angle, target_angle, current_DR, k_p, k_i, k_d,output_limits)# 调整PWM占空比  
+            pid_output = contorller(current_angle)            # 计算PID控制输出
+
+            dutyRatio =  max(limit_DR[0], min(limit_DR[1], pid_output)) # 确保PWM占空比保持在给定范围内 pid_output*output_limits*0.01 #
+            
+            apply_DR(pid_output) # 打印出来PWM/实际系统中是应用在系统里
+            # print(f"Current Angle: {current_angle:.2f}°, PWM Duty Cycle: {current_DR:.2f}%")
+            # print("Adjusting, Tar: ",target_angle," Cur delta:",current_angle-target_angle," DR: ",pid_output)
+            if not (time.time() - time_st < durance): break
+            ctrl_DR_history.append([current_angle,pid_output,time.time()- RUNTIME]) # pid_output*100/(limit_DR[1])
+
+    apply_DR(0)
+    return ctrl_DR_history
+
+def pidProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_share_dict={}): # PCA 
+    PROCESSRUNTIME = time.time()
+    print("\nCtrlProcess Starts:",PROCESSRUNTIME)
+    print("\t",PROCESSRUNTIME- RUNTIME,"s after runtime:",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)))
+    mode = 'PID'; labels = ['Angle','DutyRatio','Time']
+
+    # Address Setting
+    pca_addr = 0x40 # PWM device address
+    wire_freq = 1526 # PWM freq for wire controling
+    actuator_device=[] 
+    if i2c_actuator_controller_URL==[]:
+        print('Empty input of i2c_actuator_controller_URL, finding URL')
+        actuator_device = findFtdiDevice(pca_addr)
+    elif actuator_device==[]: 
+        i2c_device = i2c.I2cController()
+        i2c_device.configure(i2c_actuator_controller_URL) # On IIC 
+        actuator_device = PWMGENERATOR(i2c_device,debug=False) # Link PCA9685
+        actuator_device.reset()
+
+    # current_angle = process_share_dict[angle_sensor_ID]
+    # Set wire initial state
+    actuator_device.setPWMFreq(wire_freq) 
+ 
+    def get_angle(): return process_share_dict[angle_sensor_ID][0]
+    
+    def apply_DR(DR=0):
+        DR = DR*0.01
+        wire_channles_P = [12,0]
+        wire_channles_N = [14,0]
+        fan_channles_P = [4]
+        fan_channles_N = [6]
+
+        fan_max = 1/1.5 #0.55
+        DR_middle = 0
+
+        if DR > DR_middle: # Upper activation # Positive 
+            actuator_device.setDutyRatioCHS(wire_channles_N,0,stop_sending=False)
+            actuator_device.setDutyRatioCHS(fan_channles_N,fan_max,stop_sending=False)
+            actuator_device.setDutyRatioCHS(fan_channles_P,0,stop_sending=False)
+            actuator_device.setDutyRatioCHS(wire_channles_P,DR-DR_middle)
+
+        elif DR < DR_middle: # Lower activation # Negative
+            actuator_device.setDutyRatioCHS(wire_channles_P,0,stop_sending=False)
+            actuator_device.setDutyRatioCHS(fan_channles_P,fan_max,stop_sending=False)
+            actuator_device.setDutyRatioCHS(fan_channles_N,0)
+
+            actuator_device.setDutyRatioCHS(wire_channles_N,-DR)
+
+        elif DR == DR_middle: # # None activation 
+
+            actuator_device.setDutyRatioCHS(wire_channles_P,0,stop_sending=False)
+            actuator_device.setDutyRatioCHS(wire_channles_N,0,stop_sending=False)
+            actuator_device.setDutyRatioCHS(fan_channles_P,fan_max,stop_sending=False)
+            actuator_device.setDutyRatioCHS(fan_channles_N,fan_max)
+            # actuator_device.setDutyRatioCHS(wire_channles_N,0)
+            pass
+            ###
+
+    
+
+    # Ctrl part
+    ctrl_DR_history = []
+
+    target_angle = 0 #40
+    ctrl_DR_history.extend( pid_to(target_angle,get_angle,apply_DR) )
+    actuator_device.i2c_controller.close()
+
+    # Final figures
     file_name = mode+time.strftime("_%b%d_%H.%M.%S",time.localtime(RUNTIME))
 
-    saveData(data,file_name,labels)
-    saveFigure(data,file_name,labels)
+    saveData(ctrl_DR_history,file_name,labels)
+    saveFigure(ctrl_DR_history,file_name,labels,figure_mode='Single')
 
-def findFtdiDevice(addr): # find corresbonding device 
-    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1')  # ftdi://ftdi:232h:0/1
-    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1') 
-    # ftdi://ftdi:232h/1 ftdi:///1 'ftdi://ftdi:232h:1'
+    pass 
 
-    # address = os.environ.get('I2C_ADDRESS', '0x50').lower()
-    # addr = int(address, 16 if address.startswith('0x') else 10) # into dec
-    # # print("\address \t",address)
-    # # print("\addr \t",addr)
-    
-    i2c_device_0 = i2c.I2cController();i2c_device_1 = i2c.I2cController()
-    i2c_device_0.configure(url_0,frequency = 400E3)
-    i2c_device_1.configure(url_1,frequency = 400E3)
-    
-    if addr == 0x40: # PCA 
-        try: 
-            device = PWMGENERATOR(i2c_device_0,addr,debug=False); device.reset()
-        except Exception as err: 
-            print("\nErr @0x40",err)
-            device = PWMGENERATOR(i2c_device_1,addr,debug=False); device.reset()
-
-    elif addr == 0x6b: # Gryoscope address
-        try: 
-            device =IMUCHIP(i2c_device_0); device.reset()
-        except Exception as err:
-            print("\nErr @0x6b",err)
-            
-            device = IMUCHIP(i2c_device_1); device.reset()
-
-    return device
-
-def findFtdiAddr(): 
-    # find corresbonding device 
-    # https://eblot.github.io/pyftdi/urlscheme.html
-    print('Finding correspoonding FTDI addr')
-    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1')  # ftdi://ftdi:232h:0/1
-    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1') 
-    # url_2 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FD/1') 
-
-    url_list = [url_0,url_1]
-
-    i2c_addr_PCA = 0x40
-    i2c_addr_LSM = 0x6b
-    addr_PCA,addr_LSM = [],[]
-    _PCA_device,_LSM_device = [],[] 
-    device_list = []
-    # for _url in url_list: device_list.append(i2c.I2cController())
-
-    # for _device in device_list:
-    _device = i2c.I2cController()
-    for _url in url_list:
-        try:
-            _device.configure(_url,frequency = 400E3)
-            _PCA_device = PWMGENERATOR(_device); _PCA_device.reset()
-            # _PCA_device.testChannle(0)
-            addr_PCA = _url
-            url_list.remove(_url)
-            print("Found PCA addr:",addr_PCA)
-            break
-        except Exception as err:  continue
-
-    # for _device in device_list:
-    for _url in url_list:
-        try:
-            _device.configure(_url,frequency = 400E3)
-            _LSM_device = IMUCHIP(_device); _LSM_device.reset()
-            addr_LSM = _url
-            url_list.remove(_url)
-            print("Found LSM addr:",addr_LSM)
-            break
-        except Exception as err:  continue
-    
-    return addr_PCA,addr_LSM,_PCA_device,_LSM_device
-
-def i2c_test():
-
-    usb_tool = ftdi.UsbTools()
-    ftdi_devices = usb_tool.find_all( [[1027,24596]])
-    # ftdi_devices = usb_tool.find_all([[1027]])
-    print("\n",ftdi_devices)
-
-    url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/1') 
-    url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/1') 
-    # s.environ.get('FTDI_DEVICE','USB\VID_0403&PID_6014\6&263914D5&0&2') # ftdi:// [1027][:[24596][:|:0:254|:]] /1
-
-    i2c_device_0 = i2c.I2cController();i2c_device_1 = i2c.I2cController()
-    i2c_device_0.configure(url_0,frequency = 400E3)
-    i2c_device_0.configure(url_1,frequency = 400E3)
-
-    #Ftdi Addr
-    # devices = pyftdi.list_devices()
-    # print(devices)
- 
-    # 'ftdi://{}:{}:{}/{}'.format(idn.vid,idn.pid,idn.sn, idn.address)
-    # ftdi://[vendor][:[product][:serial|:bus:address|:index]]/interface
-    # ftdi[:232h[: :0:254|:]]/1
-
-    # ftdi://1027:24569:
-    # USB\VID_0403&PID_6014\6&263914d5&0&2 
-        # ftdi://[VID_0403][:[PID_6014][:serial|:bus:address|:index]]/interface
-    # USB\VID_0403&PID_6014\6&263914d5&0&1
-
-    return []
 
 if __name__=='__main__': # Test codes # Main process
     
     # Log experiment details
         # console recoder
-
         # data logger
-
-        # expriment setting log
-
-  
+        # expriment setting log  
 
     # Start of IIC comunication
     url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0') 
@@ -565,18 +678,18 @@ if __name__=='__main__': # Test codes # Main process
         process_share_dict = process_manager.dict()
         angle_sensor_ID = 'ADC001'
         
-        process_sensor_ADC = multiprocessing.Process( target= sensorProcess, args=("Angle",url_1,[],do_plot,'ADC001',process_share_dict))
+        process_sensor_ADC = multiprocessing.Process( target= sensorProcess, args=("Angle",url_1,[],do_plot,'ADC001',False,process_share_dict))
         # process_sensor_ADC = Process( target= sensorProcess, args=("Volta",url_Sensor,[],do_plot))
         # process_sensor_IMU = Process( target= sensorProcess, args=("IMU",url_2,[],do_plot))
 
-        process_ctrl = multiprocessing.Process(target= ctrlProcess,args=(url_0,'ADC001',process_share_dict))     
+        # process_ctrl = multiprocessing.Process(target= ctrlProcess,args=(url_0,'ADC001',process_share_dict))     
 
-        process_ctrl = multiprocessing.Process(target= showMPTest,args=(url_0,'ADC001',process_share_dict))     
+        process_ctrl = multiprocessing.Process(target= pidProcess,args=(url_0,'ADC001',process_share_dict))     
 
         process_sensor_ADC.start()
         # process_sensor_IMU.start()
 
-        time.sleep(0.6)
+        # time.sleep(0.6)
         process_ctrl.start()
 
         process_sensor_ADC.join()

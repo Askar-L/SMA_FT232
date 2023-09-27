@@ -54,7 +54,7 @@ def saveData(data,file_name,labels,f_type:str="csv",**kwargs: Mapping[str, Any])
 
     return file_url
 
-def saveFigure(data,file_name,labels,show_img=False,**kwargs: Mapping[str, Any]):
+def saveFigure(data,file_name,labels,show_img=False, figure_mode='Double' ,**kwargs: Mapping[str, Any]):
     data_np = np.array(data)
     data_size = data_np.shape
     print("Saving figure for sampled data:",data_size)
@@ -62,13 +62,15 @@ def saveFigure(data,file_name,labels,show_img=False,**kwargs: Mapping[str, Any])
     figsize=FIG_SIZE
     if not data_size[1] >3 : 
         figsize = (FIG_SIZE[1]*2.35,FIG_SIZE[1])
- 
+    
+    # if data_size[1]<2: ValueError
+
     plt.rcParams.update({'font.size': FONTSIZE}) # 改变所有字体大小，改变其他性质类似
 
     plt.figure(figsize=figsize,dpi=100)
     plt.clf()
 
-    if data_size[1] > 3 : # Muti-Dim(a,b,...,t)
+    if figure_mode == 'Double' : # Muti-Dim(a,b,...,t)
 
         ax = plt.subplot(211)
         # plt.xticks(fontsize=FONTSIZE); plt.yticks(fontsize=FONTSIZE)
@@ -85,9 +87,9 @@ def saveFigure(data,file_name,labels,show_img=False,**kwargs: Mapping[str, Any])
         plt.legend(loc='upper center', ncol=3,frameon=False,shadow=False,framealpha=0)
         plt.xlabel(labels[-1])
 
-
-    else:         # One dim (x,t)
+    elif figure_mode == 'Single':         # One dim (x,t)
         # ax = plt.subplot(111)
+
         plt.rcParams.update({'font.size': int(FONTSIZE*1.4)}) # 改变所有字体大小，改变其他性质类似
         x_locator = [MultipleLocator(2),MultipleLocator(0.2)] # Major / Minor
 
@@ -96,9 +98,11 @@ def saveFigure(data,file_name,labels,show_img=False,**kwargs: Mapping[str, Any])
 
         # y_locator = [MultipleLocator(20),MultipleLocator(10)]
         # ax.yaxis.set_major_locator(y_locator[0]);ax.yaxis.set_minor_locator(y_locator[1])
+        for i in range(data_size[1] - 1 ):
 
-        plt.plot(data_np[:,-1],data_np[:,0],label =labels[0])
-        plt.scatter(data_np[:,-1],data_np[:,0],label =labels[0],s=10,alpha=0.4)
+            plt.plot(data_np[:,-1],data_np[:,i],label =labels[i])
+            plt.scatter(data_np[:,-1],data_np[:,i],label =labels[i],s=10,alpha=0.4)
+
         plt.legend()
         plt.grid(which="major"); plt.grid(which="minor",alpha=0.4)
         plt.xlabel(labels[-1])
