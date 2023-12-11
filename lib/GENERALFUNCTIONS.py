@@ -7,6 +7,7 @@ General functions for all system
 from msilib.schema import Font
 from tkinter import font
 from turtle import shapesize
+
 import numpy as np
 import os,time,sys
 from matplotlib import pyplot as plt
@@ -89,9 +90,9 @@ def saveFigure(data,file_name,labels,show_img=False, figure_mode='Double' ,**kwa
 
     elif figure_mode == 'Single':         # One dim (x,t)
         # ax = plt.subplot(111)
-
+        t_end = int(data_np[-1,-1])
         plt.rcParams.update({'font.size': int(FONTSIZE*1.4)}) # 改变所有字体大小，改变其他性质类似
-        x_locator = [MultipleLocator(2),MultipleLocator(0.2)] # Major / Minor
+        x_locator = [MultipleLocator(t_end*0.1),MultipleLocator(t_end*0.025)] # Major / Minor
 
         ax=plt.gca()
         ax.xaxis.set_major_locator(x_locator[0]);ax.xaxis.set_minor_locator(x_locator[1])
@@ -101,11 +102,12 @@ def saveFigure(data,file_name,labels,show_img=False, figure_mode='Double' ,**kwa
         for i in range(data_size[1] - 1 ):
 
             plt.plot(data_np[:,-1],data_np[:,i],label =labels[i])
-            plt.scatter(data_np[:,-1],data_np[:,i],label =labels[i],s=10,alpha=0.4)
+            # plt.scatter(data_np[:,-1],data_np[:,i],label =labels[i],s=10,alpha=0.4)
 
         plt.legend()
         plt.grid(which="major"); plt.grid(which="minor",alpha=0.4)
         plt.xlabel(labels[-1])
+        # print("'t_end'",x_locator)
 
 
     f_type = "pdf"

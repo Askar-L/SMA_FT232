@@ -31,10 +31,11 @@ from multiprocessing import  Process
 
 if True: # Experiment settings
     
+    RESTING = 0
+
     DO_PLOT = False
     if DO_PLOT: TIME_OUT = 10000
-    else: TIME_OUT = 2
-
+    else: TIME_OUT = 20 + RESTING
     VOT = 9 # Vlots
     LOAD = 20 # Grams
 
@@ -533,40 +534,47 @@ def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_
 
 def pid_to(target_angle,get_angle,apply_DR):
     from simple_pid import PID
-
+    import math
     # ratio = 0.02
-    (k_p, k_i, k_d) = (160,280,2.8)#(16,20.5,0.28)# (3.8,10,0.1)#Extensor (2.8,4,0.02) Flexor(2.5,2.35,0.068) # (60,80,4) *0.02 (160,80,3)
-    # (k_p, k_i, k_d) = (k_p*ratio, k_i*ratio,k_d*ratio)
+    (k_p, k_i, k_d) = (160,40,4) # (6,2.8,1) #(160,40,4)#(20,20,4)#(16,20.5,0.28)# (3.8,10,0.1)#Extensor (2.8,4,0.02) Flexor(2.5,2.35,0.068) # (60,80,4) *0.02 (160,80,3)
+    T_exp = 10
+    R_exp = 0
+    print("\n\nWith PID parameters:", (k_p, k_i, k_d))
+    print("PID following: sin wave of T=",T_exp,' Amplitude: ',R_exp,' degree of mean: ',target_angle)
     DR_limit = 100/2
     limit_DR =  (-DR_limit,DR_limit)                    
     durance = TIME_OUT -0.5
+    
     # P调大，反应速度快了，但是出现了超调，指针出现抖动，
     # I调大，在原来基础上，误差变小了
     # D调大，反应速度慢了，但是抖动消失了，且指针存在一定误差（没和下面对准）
     # 初始PWM占空比和目标角度
     dutyRatio = 0  # 读取到当前的PWM 占空比 # (个人习惯)占空比 此处采用DR(dutyRatio)
     
-    contorller = PID(k_p, k_i, k_d,sample_time=1/2400,output_limits= limit_DR) # # 创建PID控制器
+    contorller = PID(k_p, k_i, k_d,sample_time=1/1200,output_limits= limit_DR) # # 创建PID控制器
     contorller.setpoint = target_angle
 
     time_st = time.time()
     ctrl_DR_history = []
-    while time.time() - time_st < durance:
+    
+    while True: # abs(current_angle - target_angle) > 0.05
+        current_t = time.time()- RUNTIME
         current_angle = get_angle()  # 获取当前角度
-        # print(current_angle,current_DR)
-        while True: # abs(current_angle - target_angle) > 0.05
-            current_angle = get_angle()  # 获取当前角度
-                     
-            # current_DR = pid_pwm_control(contorller,current_angle, target_angle, current_DR, k_p, k_i, k_d,output_limits)# 调整PWM占空比  
-            pid_output = contorller(current_angle)            # 计算PID控制输出
+        
+        if current_t < RESTING: current_target = current_angle + current_t*5
+        else: current_target = target_angle + R_exp * math.sin( (2*math.pi)*current_t/T_exp)
 
-            dutyRatio =  max(limit_DR[0], min(limit_DR[1], pid_output)) # 确保PWM占空比保持在给定范围内 pid_output*output_limits*0.01 #
-            
-            apply_DR(pid_output) # 打印出来PWM/实际系统中是应用在系统里
-            # print(f"Current Angle: {current_angle:.2f}°, PWM Duty Cycle: {current_DR:.2f}%")
-            # print("Adjusting, Tar: ",target_angle," Cur delta:",current_angle-target_angle," DR: ",pid_output)
-            if not (time.time() - time_st < durance): break
-            ctrl_DR_history.append([current_angle,pid_output,time.time()- RUNTIME]) # pid_output*100/(limit_DR[1])
+        contorller.setpoint = current_target
+        # current_DR = pid_pwm_control(contorller,current_angle, target_angle, current_DR, k_p, k_i, k_d,output_limits)# 调整PWM占空比  
+        pid_output = contorller(current_angle)            # 计算PID控制输出
+
+        # dutyRatio =  max(limit_DR[0], min(limit_DR[1], pid_output)) # 确保PWM占空比保持在给定范围内 pid_output*output_limits*0.01 #
+        
+        apply_DR(pid_output) # 打印出来PWM/实际系统中是应用在系统里
+        # print(f"Current Angle: {current_angle:.2f}°, PWM Duty Cycle: {current_DR:.2f}%")
+        # print("Adjusting, Tar: ",target_angle," Cur delta:",current_angle-target_angle," DR: ",pid_output)
+        if not (current_t < durance): break
+        ctrl_DR_history.append([current_angle,pid_output,current_target,current_t]) # pid_output*100/(limit_DR[1])
 
     apply_DR(0)
     return ctrl_DR_history
@@ -575,7 +583,7 @@ def pidProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_s
     PROCESSRUNTIME = time.time()
     print("\nCtrlProcess Starts:",PROCESSRUNTIME)
     print("\t",PROCESSRUNTIME- RUNTIME,"s after runtime:",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)))
-    mode = 'PID'; labels = ['Angle','DutyRatio','Time']
+    mode = 'PID'; labels = ['Angle','DutyRatio','Target','Time']
 
     # Address Setting
     pca_addr = 0x40 # PWM device address
@@ -603,20 +611,19 @@ def pidProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_s
         fan_channles_P = [4]
         fan_channles_N = [6]
 
-        fan_max = 1/1.5 #0.55
+        fan_max = 1/2 #0.55
         DR_middle = 0
 
         if DR > DR_middle: # Upper activation # Positive 
             actuator_device.setDutyRatioCHS(wire_channles_N,0,stop_sending=False)
-            actuator_device.setDutyRatioCHS(fan_channles_N,fan_max,stop_sending=False)
-            actuator_device.setDutyRatioCHS(fan_channles_P,0,stop_sending=False)
+            # actuator_device.setDutyRatioCHS(fan_channles_N,fan_max,stop_sending=False)
+            # actuator_device.setDutyRatioCHS(fan_channles_P,0,stop_sending=False)
             actuator_device.setDutyRatioCHS(wire_channles_P,DR-DR_middle)
 
         elif DR < DR_middle: # Lower activation # Negative
             actuator_device.setDutyRatioCHS(wire_channles_P,0,stop_sending=False)
-            actuator_device.setDutyRatioCHS(fan_channles_P,fan_max,stop_sending=False)
-            actuator_device.setDutyRatioCHS(fan_channles_N,0)
-
+            # actuator_device.setDutyRatioCHS(fan_channles_P,fan_max,stop_sending=False)
+            # actuator_device.setDutyRatioCHS(fan_channles_N,0,stop_sending=False)
             actuator_device.setDutyRatioCHS(wire_channles_N,-DR)
 
         elif DR == DR_middle: # # None activation 
@@ -628,8 +635,6 @@ def pidProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_s
             # actuator_device.setDutyRatioCHS(wire_channles_N,0)
             pass
             ###
-
-    
 
     # Ctrl part
     ctrl_DR_history = []

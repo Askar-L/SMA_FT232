@@ -1,7 +1,4 @@
-# %%
-import pyftdi.ftdi as ftdi
-
-import pyftdi.i2c as i2c
+# %% 
 import pyftdi.spi as spi
 import os,time
 
@@ -16,11 +13,7 @@ CMD_RREG = 0x10
 CMD_WREG = 0x50
 CMD_RESET = 0xFE
 
-url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0') 
-# url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/0')                
-# url_2 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FD/1')
-# url_3 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FC/1')
-
+url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0')  
 
 
 spi_device = spi.SpiController(cs_count=1)
@@ -78,12 +71,16 @@ while True:
     # time.sleep(50*TCLKIN)
     raw_data = spi_slave_device.exchange([0x00],3)
     
+    # The ADS1255/6 output 24 bits of data in Binary Two’s Complement format
+    # [-1,1]-> [0x800000,0x7FFFFF]
     _res = (raw_data[0]<<16) + (raw_data[1]<<8) + raw_data[2]
     if not (_res&0x800000)==0: _res = -((_res^0xffffff) +1)
-    _res = _res/0xFFFFFF
+    _res = _res/0x7FFFFF # OR 0xFFFFFFF
+    _res = _res * 2
     i += 1 
 
+    # _res = raw_data
     # if time.time()-st_time > 1: break
     print('\r',_res,end='')
-    time.sleep(0.2l.)
+    time.sleep(0.2)
 print(i)
