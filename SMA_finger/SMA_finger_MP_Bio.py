@@ -272,6 +272,27 @@ def experiment_actuators(actuator_device): # Actuators Experiment 1
     # actuator_device.test_wires(wire_channles_M,DUTYS_M,INTERVALS_M,conf0=True)
 
     pass
+
+def experiment_bio_01(actuator_device): # Actuators Experiment 1
+    wire_channles_P = [12,0] 
+    
+    # Positive derections
+    DUTYS_P = [0.4,0]# [1,0.2]   # [预热 响应 维持]c 
+    INTERVALS_P =[20,0.1]# [0.2,1]
+    
+    # # Reversed derections
+    # DUTYS_M = [1,0.3]# [1,0.2]   # [预热 响应 维持]c
+    # INTERVALS_M =[0.2,2]# [0.2,1]
+
+    print_info(DUTYS_P,INTERVALS_P)
+    # actuator_device.test_wires(fan_channles,DUTYS_P,INTERVALS_P,conf0=True)
+    
+    actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,conf0=True)
+    # Extensor direction: DR [1,0.3] Duration [0.2,2]
+    # actuator_device.test_wires(wire_channles_M,DUTYS_M,INTERVALS_M,conf0=True)
+
+    pass
+
  
 def sensor_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False,lables=[]): # NONE FIFO Version
     # LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
@@ -528,7 +549,7 @@ def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_
 
     # Set wire initial state
     actuator_device.setPWMFreq(wire_freq) 
-    experiment_actuators(actuator_device)     
+    experiment_bio_01(actuator_device)     
     actuator_device.i2c_controller.close()
     pass 
 
