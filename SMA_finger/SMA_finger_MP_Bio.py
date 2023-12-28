@@ -274,11 +274,17 @@ def experiment_actuators(actuator_device): # Actuators Experiment 1
     pass
 
 def experiment_bio_01(actuator_device): # Actuators Experiment 1
-    wire_channles_P = [12,0] 
+    wire_channles_P = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    DUTYS_P = [0]
+    INTERVALS_P = [0.1]
+    actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,conf0=True)
+
+
+    wire_channles_P = [0,2,4,6,8,10,12,13,14,15] 
     
-    # Positive derections
-    DUTYS_P = [0.4,0]# [1,0.2]   # [预热 响应 维持]c 
-    INTERVALS_P =[20,0.1]# [0.2,1]
+    # Positive derections  
+    DUTYS_P = [1,0]# [1,0.2]   # [预热 响应 维持]c 
+    INTERVALS_P =[100,0.1]# [0.2,1]
     
     # # Reversed derections
     # DUTYS_M = [1,0.3]# [1,0.2]   # [预热 响应 维持]c
