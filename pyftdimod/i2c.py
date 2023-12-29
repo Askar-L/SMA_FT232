@@ -339,8 +339,8 @@ class I2cController:
     SCL_FB_BIT = 0x80  #AD7
     PAYLOAD_MAX_LENGTH = 0xFF00  # 16 bits max (- spare for control)
     HIGHEST_I2C_ADDRESS = 0x7F
-    DEFAULT_BUS_FREQUENCY = 100000.0
-    HIGH_BUS_FREQUENCY = 400000.0
+    DEFAULT_BUS_FREQUENCY = 1E6#100000.0
+    HIGH_BUS_FREQUENCY = 1E6#400000.0
     RETRY_COUNT = 3
 
     I2C_MASK = SCL_BIT | SDA_O_BIT | SDA_I_BIT
@@ -421,7 +421,7 @@ class I2cController:
         # Fix frequency for 4-phase clock by Askar.L @ 20230129
         if frequency <= 100E3: timings = self.I2C_100K
         elif frequency <= 400E3: timings = self.I2C_400K
-        elif frequency <= 1000E3: timings = self.I2C_3M
+        elif frequency <= 1000E3: timings = self.I2C_1M
         else: timings = self.I2C_3M; self.hs_mode = True
 
         if 'clockstretching' in kwargs:
@@ -1036,12 +1036,6 @@ class I2cController:
             cmd.append(byte)
             if self.hs_mode: self._send_no_check(cmd)
             else: self._send_check_ack(cmd)
-
-    # 20230129 H-s mode
-    def startHsMode(self):
-        0b00001001
-
-        pass
 
     def _send_no_check(self, cmd: bytearray):
         if self._fake_tristate:

@@ -29,7 +29,13 @@ class Pca9685_01(object):
   __ALLLED_ON_H        = 0xFB
   __ALLLED_OFF_L       = 0xFC
   __ALLLED_OFF_H       = 0xFD
-  
+
+  CH_EVEN = [0,2,4,6,8,10,12,14]
+  CH_ODD = [1,3,5,7,9,11,13,15]
+  CH_ALL = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+
+
+
   def __init__(self, i2c_controller,address=0x40,easy_mdoe= True,debug=False,):
     print("Creating New PCA9685 IIC slave :",hex(address))
     
@@ -38,6 +44,7 @@ class Pca9685_01(object):
     
     # Get a port to an I2C slave device
     self.slave = i2c_controller.get_port( address ) # 0x21 
+    
     # self.slave = smbus.SMBus(1)
 
     self.address = address
@@ -45,8 +52,15 @@ class Pca9685_01(object):
     self.osc_clock = 25000000.0
     self.easy_mdoe = easy_mdoe 
     self.OCH_mode = False
-    self.setOCH()
+    self.AI = False
+
+    
+    self.restart()
     self.reset()
+
+    self.setOCH() # # Output change on ack mode
+    self.setAI(True)
+
 
 
   def reset(self): #BUG
@@ -80,8 +94,9 @@ class Pca9685_01(object):
 
     print('\nSucess Reseted PCA9685 board:0x%02X'%self.address)
     self.i2c_controller._do_epilog()
+ 
 
-    if (self.debug): 
+    if self.debug: 
       print("Reseting PCA9685: ",'%#x'%self.address )
       print("Initial Mode_1 reg value: ",'%#x'%self.read(self.__MODE1))
       print("Initial Mode_2 reg value: ",'%#x'%self.read(self.__MODE2))
@@ -103,6 +118,10 @@ class Pca9685_01(object):
     # RESTART bit will clear
     self.slave.write_to( regaddr= self.__MODE1, out=bytearray(mode1_data | 128 ))
 
+    time.sleep(1)
+    mode1_data = self.read(self.__MODE1)   
+    print('\tMODE1 after reset: ',bin(mode1_data))
+    # exit()
 
     pass
 
@@ -207,13 +226,12 @@ class Pca9685_01(object):
     print("\tBack to awake mode")
     self.slave.write_to( regaddr=self.__MODE1, out=bytearray([oldmode])) # Restart sign
     
-  def setOCH(self):
-    self.OCH_mode = True
-
+  def setOCH(self): # updated @20231229
+    # Output change on ack mode
+ 
+    # sleep
     oldmode1 = self.read(self.__MODE1)
-    newmode1 = (oldmode1 & 0x7F) | 0x10        # sleep
-    # print("\tOld mode:0x%02X"%oldmode, " Mode to write:0x%02X"%newmode)
-
+    newmode1 = (oldmode1 & 0x7F) | 0x10        
     self.slave.write_to( regaddr=self.__MODE1, out=bytearray([newmode1])) # go to sleep
 
     oldmode2 = self.read(self.__MODE2)
@@ -221,10 +239,48 @@ class Pca9685_01(object):
 
     # print("\tWritting value: ",prescale,", to prescale reg ",hex(self.__PRESCALE))
     self.slave.write_to( regaddr=self.__MODE2, out=bytearray([newmode2]) ) # Value
+    # print("\tBack to awake mode")
 
-    print("\tBack to awake mode")
     self.slave.write_to( regaddr=self.__MODE1, out=bytearray([oldmode1])) # Restart sign
-    print("oldmode2: 0x%02X New:0x%02X" % (oldmode2, self.read(self.__MODE2)) )
+    if self.debug:
+      print("oldmode2: 0x%02X New:0x%02X" % (oldmode2, self.read(self.__MODE2)) )
+    
+    current_mode_2 = self.read(self.__MODE2)
+    if current_mode_2 & 0x08:
+      print(' OCH mode opened.')
+      self.OCH_mode = True
+      return True 
+    else:
+      print('\n\nFAILED: OCH mode open failed!\n\tOCH mode: Output change on ACK')
+      return False
+
+  def setAI(self,is_on):
+    # Set Auto Increasment Mode@20231229
+    _oldmode1 = self.slave.read_from(self.__MODE1,1)[0]
+    _oldmode2 = self.slave.read_from(self.__MODE2,1)[0]
+    
+    if self.debug: 
+      print('-'*20,'Pca9685_01.setAI()')
+      print('_oldmode1: ',bin(_oldmode1),'_oldmode2',bin(_oldmode2))
+
+    self.AI = True if (_oldmode1 & 0x20) else False 
+    if self.debug: print('AI mode: ',self.AI)
+
+    if  (_oldmode1 & 0x20 ) ^ is_on: # IF NOT SAME
+      if is_on:
+        _newmode1 = (_oldmode1 | 0x20 ) # AI ON/OFF
+      else:
+        _newmode1 = (_oldmode1 & 0xDF ) # AI ON/OFF
+      self.slave.write_to( regaddr=self.__MODE1, out=bytearray([_newmode1]) ) # Value
+
+      self.AI = True if (self.read(self.__MODE1) & 0x20) else False
+      if self.debug: print('_newmode1: ',bin(_newmode1),' now: ',bin(self.read(self.__MODE1)),'self.AI',self.AI)
+
+      if not self.AI ==  is_on:
+        print('\n\nFAILED: Failed on setting AI mode:\n\tself.AI old:'
+              ,bin(_oldmode1),' Cuurent',bin(self.AI))
+        exit()
+      else: return self.AI
 
   def getPWMFreq(self):
     cur_prescala = self.read(self.__PRESCALE)
@@ -244,7 +300,15 @@ class Pca9685_01(object):
     
     if (self.debug):      print("\tChannel: %d  LED_ON: %d LED_OFF: %d" % (channel,on,off))
 
-  def setDutyRatioCH(self,channel,duty_ratio,stop_sending=True):
+  def setOnTime(self,channel=[_i-1 for _i in range(16)]):
+    # NOT ready
+    for _ch in channel:
+      port = self.__LED0_ON_L + (_ch)*4
+      self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value On time Low
+      self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=True ) # Value On time H
+      return []
+  
+  def setDutyRatioCH(self,channel,duty_ratio,relax=True):
 
     if not self.easy_mdoe:
       print("Pls use easy mode to Duty Ratio!"); return []
@@ -253,34 +317,44 @@ class Pca9685_01(object):
     elif duty_ratio<0 or duty_ratio>1:
       print("\n\n\t\t Illegeal DUTY RATIO!! \nPlease set duty ratio to 0-1"); return []
 
-    else:  
-      port = self.__LED0_ON_L + (channel)*4
-      # if self.debug: print('\nTesting channel: ',channel,'; Port: ',channel,'/',hex(channel))
-      
-      off_time =int((4096-1) * duty_ratio )# [off_time_H,off_time_L] = [0000,off_time(12Bit)]
-      
-      off_time_L = off_time & 0xFF
-      off_time_H = off_time >> 8
-      
-      if stop_sending and (not self.OCH_mode):
-        self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value
-        self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=False ) # Value
+    
+    port = self.__LED0_ON_L + (channel)*4
+    # if self.debug: print('\nTesting channel: ',channel,'; Port: ',channel,'/',hex(channel))
+    
+    off_time =int((4096-1) * duty_ratio )# [off_time_H,off_time_L] = [0000,off_time(12Bit)]
+    off_time_L = off_time & 0xFF
+    off_time_H = off_time >> 8
+
+    if not self.AI:  
+      if relax and (not self.OCH_mode): #
+        # self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value
+        # self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=False ) # Value
         self.slave.write_to( regaddr=port+2, out=bytearray([off_time_L]),relax=False ) # Value
         self.slave.write_to( regaddr=port+3, out=bytearray([off_time_H])) # Value
-        print("S2")
       else:
-        self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value
-        self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=False ) # Value
+        # _data =  [0x00,0x00,off_time_L,off_time_H]
+        self.slave.write_to( regaddr=port, out=bytearray([0x00]),relax=False ) # Value On time Low
+        self.slave.write_to( regaddr=port+1, out=bytearray([0x00]),relax=False ) # Value On time H
         self.slave.write_to( regaddr=port+2, out=bytearray([off_time_L]),relax=False ) # Value
         self.slave.write_to( regaddr=port+3, out=bytearray([off_time_H]),relax=False) # Value
+    else:
+        _data =  [0x00,0x00,off_time_L,off_time_H]
+        self.slave.write_to( regaddr=port, out=bytearray(_data),relax=relax ) 
+  
     return []
+  
+  def setDutyRatioCHS(self,channels,duty_ratio,relax=False): # 20220815
 
-  def setDutyRatioCHS(self,channels,duty_ratio,stop_sending=False): # 20220815
     if len(channels) >= 1:
-      for _ch in channels[:len(channels)-1]: 
-        self.setDutyRatioCH(_ch,duty_ratio,stop_sending=False)
-    else :print("\nNo target channel!"); return []
-    self.setDutyRatioCH(channels[-1],duty_ratio,stop_sending)   
+      if self.OCH_mode:
+        for _ch in channels: 
+          self.setDutyRatioCH(_ch,duty_ratio,relax=relax)
+      else:
+        for _ch in channels[:len(channels)-1]: 
+          self.setDutyRatioCH(_ch,duty_ratio,relax=False)
+        self.setDutyRatioCH(channels[-1],duty_ratio,relax=relax)  
+    else :
+      self.setDutyRatioCH(channels[-1],duty_ratio,relax=relax)   
 
     return []
 
@@ -295,7 +369,7 @@ class Pca9685_01(object):
     self.setPWM(channel, 0, pulse)
   
   # 手部功能的初级实现！ 后需另外建立lib
-  def test_wires(self,channels,dutys,intervals,conf0 = False):
+  def test_wires(self,channels,dutys,intervals,is_show = False):
     # [active_duty,sustain_duty,stop_duty] = dutys
     # [burst_interval,sustain_interval,stop_interval] = intervals
     # if not len(dutys)==len(intervals): 
@@ -303,13 +377,54 @@ class Pca9685_01(object):
 
     # if conf0 and not channels[-1]==0 : channels.append(0)
 
+
+    # Open AutoIncreasing mode:
+    # self.setAI(True)
+
     for _duty,_interval in zip(dutys,intervals) :
-        print("PCA Setting Duty Ratio",channels,_duty,_interval)
+        if is_show: print("PCA Setting Duty Ratio",channels,_duty,_interval)
+
         self.setDutyRatioCHS(channels,_duty)
-        print("DR SET at:", time.time()- RUNTIME," Related to ",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)) )
 
+        if is_show: print("DR SET at:", time.time()- RUNTIME,
+              " Related to ",time.strftime('%Y:%m:%d %H:%M:%S'
+                                           , time.localtime(RUNTIME)) )
         time.sleep(_interval)
+
         self.setDutyRatioCHS(channels,0)
-        print("DR OVER at:", time.time()- RUNTIME," Related to ",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)) )
 
+        if is_show: print("DR OVER at:", time.time()- RUNTIME,
+              " Related to ",time.strftime('%Y:%m:%d %H:%M:%S'
+                                           , time.localtime(RUNTIME)) )
 
+  def communication_speed_test(self,wire_channles= CH_ALL,cycles=20):
+
+    self.setOCH()
+    self.setAI(True)
+
+    t_st =time.time()
+    for _ in range(cycles):
+      self.setDutyRatioCH(0,1,relax=False)
+      self.setDutyRatioCH(0,0,relax=False)
+    t_end = time.time()
+
+    print('Single Ch Refreshing : Avg Duration:',(t_end-t_st)/cycles,' Freq: ',cycles/(t_end-t_st))
+   
+    t_st =time.time()
+    for _ in range(cycles):
+      self.setDutyRatioCHS(wire_channles,1,relax=False)
+      self.setDutyRatioCHS(wire_channles,0,relax=False)
+
+    t_end = time.time()
+
+    print('All Ch Refreshing: Avg Duration:',(t_end-t_st)/cycles,' Freq: ',cycles/(t_end-t_st))
+   
+
+    t_st =time.time()
+    for _ in range(cycles):
+      self.setDutyRatioCHS(wire_channles,1,relax=False)
+      self.setDutyRatioCHS(wire_channles,0,relax=False)
+
+    t_end = time.time()
+
+    print('All: Avg Duration:',(t_end-t_st)/cycles,' Freq: ',cycles/(t_end-t_st))

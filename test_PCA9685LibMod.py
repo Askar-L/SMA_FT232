@@ -31,10 +31,10 @@ if __name__=='__main__':
   t0 = time.time()
   for _i in range(100):
     
-    pca9685.setDutyRatioCHS([0], duty_ratio=_i/100,stop_sending=False) # 100 for 1.79 ->> 0.41794872283935547
+    pca9685.setDutyRatioCHS([0], duty_ratio=_i/100,relax=False) # 100 for 1.79 ->> 0.41794872283935547
     # pca9685.setDutyRatioCH(15, duty_ratio=_i/100,stop_sending=True) # 100 for 0.13S
   print(time.time()-t0)
-  pca9685.setDutyRatioCHS([15,0], duty_ratio=0,stop_sending=False) # 100 for 1.79
+  pca9685.setDutyRatioCHS([15,0], duty_ratio=0,relax=False) # 100 for 1.79
 
   exit()
 

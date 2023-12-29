@@ -2,7 +2,7 @@
 # Modified in 2022 10 14
 
  
-import pyftdi.i2c as i2c
+import pyftdimod.i2c as i2c
 import math, time, sys
  
 class Lsm6ds3_01:

@@ -14,7 +14,8 @@ parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0,parentdir)
 
 # Driver funcs
-import pyftdi.i2c as i2c
+from pyftdimod import i2c as i2c
+
 
 from lsm6ds3.LSM6DS3 import Lsm6ds3_01 as IMUCHIP
 from pca9685.PCA9685 import Pca9685_01 as PWMGENERATOR
@@ -25,7 +26,9 @@ sys.stdout = Logger()
 sys.stderr = sys.stdout		# redirect std err, if necessary
 
 # Test settings
-import pyftdi.ftdi as ftdi
+import pyftdimod.ftdi as ftdi
+
+#import pyftdi.ftdi as ftdi
 from multiprocessing import  Process
 
 
@@ -275,30 +278,28 @@ def experiment_actuators(actuator_device): # Actuators Experiment 1
 
 def experiment_bio_01(actuator_device): # Actuators Experiment 1
     wire_channles_P = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-    DUTYS_P = [0]
-    INTERVALS_P = [0.1]
-    actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,conf0=True)
+    DUTYS_P = [1,0]
+    INTERVALS_P = [2,0]
+    actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,is_show=True)
 
 
-    wire_channles_P = [0,2,4,6,8,10,12,13,14,15] 
-    
+    wire_channles_P = actuator_device.CH_EVEN
+
     # Positive derections  
-    DUTYS_P = [1,0]# [1,0.2]   # [预热 响应 维持]c 
-    INTERVALS_P =[100,0.1]# [0.2,1]
-    
-    # # Reversed derections
-    # DUTYS_M = [1,0.3]# [1,0.2]   # [预热 响应 维持]c
-    # INTERVALS_M =[0.2,2]# [0.2,1]
+    DUTYS_P_unit = [0.8,0]# [1,0.2]   # [预热 响应 维持]c 
+    INTERVALS_P_unit =[0.0,0.0]# [0.2,1]
+    DUTYS_P,INTERVALS_P = [],[]
+    num_cycles = 1000
+
+    for _ in range(num_cycles):
+        DUTYS_P.extend(DUTYS_P_unit)
+        INTERVALS_P.extend(INTERVALS_P_unit)
 
     print_info(DUTYS_P,INTERVALS_P)
-    # actuator_device.test_wires(fan_channles,DUTYS_P,INTERVALS_P,conf0=True)
-    
-    actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,conf0=True)
-    # Extensor direction: DR [1,0.3] Duration [0.2,2]
-    # actuator_device.test_wires(wire_channles_M,DUTYS_M,INTERVALS_M,conf0=True)
+    actuator_device.communication_speed_test()
+    # actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,is_show=False)
 
-    pass
-
+ 
  
 def sensor_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False,lables=[]): # NONE FIFO Version
     # LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
@@ -549,12 +550,13 @@ def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_
     elif actuator_device==[]: 
         i2c_device = i2c.I2cController()
         # print(i2c_actuator_controller_URL)
-        i2c_device.configure(i2c_actuator_controller_URL) # On IIC 
+        i2c_device.configure(i2c_actuator_controller_URL,frequency = 1E6,clockstretching=False) # On IIC      
         actuator_device = PWMGENERATOR(i2c_device,debug=False) # Link PCA9685
-        actuator_device.reset()
+        # i2c_device.write()
 
     # Set wire initial state
     actuator_device.setPWMFreq(wire_freq) 
+
     experiment_bio_01(actuator_device)     
     actuator_device.i2c_controller.close()
     pass 
