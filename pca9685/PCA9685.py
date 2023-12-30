@@ -310,12 +310,12 @@ class Pca9685_01(object):
   
   def setDutyRatioCH(self,channel,duty_ratio,relax=True):
 
-    if not self.easy_mdoe:
-      print("Pls use easy mode to Duty Ratio!"); return []
-    if (channel<0) or channel >15: 
-      print("\nIllegal PWM channel: ",channel,"\n\tShould in range: [0,15]"); return []
-    elif duty_ratio<0 or duty_ratio>1:
-      print("\n\n\t\t Illegeal DUTY RATIO!! \nPlease set duty ratio to 0-1"); return []
+    # if not self.easy_mdoe:
+    #   print("Pls use easy mode to Duty Ratio!"); return []
+    # if (channel<0) or channel >15: 
+    #   print("\nIllegal PWM channel: ",channel,"\n\tShould in range: [0,15]"); return []
+    # elif duty_ratio<0 or duty_ratio>1:
+    #   print("\n\n\t\t Illegeal DUTY RATIO!! \nPlease set duty ratio to 0-1"); return []
 
     
     port = self.__LED0_ON_L + (channel)*4
@@ -397,7 +397,7 @@ class Pca9685_01(object):
               " Related to ",time.strftime('%Y:%m:%d %H:%M:%S'
                                            , time.localtime(RUNTIME)) )
 
-  def communication_speed_test(self,wire_channles= CH_ALL,cycles=20):
+  def communication_speed_test(self,wire_channles= CH_ALL,cycles=40):
 
     self.setOCH()
     self.setAI(True)

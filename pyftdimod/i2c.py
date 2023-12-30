@@ -410,9 +410,12 @@ class I2cController:
            * ``initial`` a bitfield specifying the initial output value. Only
              useful to setup default IOs at start up, use
              :py:class:`I2cGpioPort` to drive GPIOs.
+
            * ``frequency`` float value the I2C bus frequency in Hz
+
            * ``clockstretching`` boolean value to enable clockstreching. 
              xD7 (GPIO7) pin should be connected back to xD0 (SCK)
+
            * ``debug`` to increase log verbosity, using MPSSE tracer
         """
         if 'frequency' in kwargs: frequency = kwargs['frequency']; del kwargs['frequency']
@@ -421,8 +424,8 @@ class I2cController:
         # Fix frequency for 4-phase clock by Askar.L @ 20230129
         if frequency <= 100E3: timings = self.I2C_100K
         elif frequency <= 400E3: timings = self.I2C_400K
-        elif frequency <= 1000E3: timings = self.I2C_1M
-        else: timings = self.I2C_3M; self.hs_mode = True
+        elif frequency <= 1000E3: timings = self.I2C_3M
+        else: timings = self.I2C_3M #; self.hs_mode = True
 
         if 'clockstretching' in kwargs:
             clkstrch = bool(kwargs['clockstretching']); del kwargs['clockstretching']

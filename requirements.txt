@@ -1,2 +1,17 @@
 Adafruit-Blinka # https://github.com/adafruit/Adafruit_Blinka
-pyftdi
+
+pyftdi # a modified pyftdi is contained
+
+# PyQt-Fluent-Widgets 
+    # pip install PyQt-Fluent-Widgets -i https://pypi.org/simple/
+#  Install full feature
+    # pip install "PyQt-Fluent-Widgets[full]" -i https://pypi.org/simple/
+# Pyqt5+PyQt-Fluent-Widgets+Pycharm环境安装 https://zhuanlan.zhihu.com/p/641791925
+PyQt6
+PyQt6-Fluent-Widgets
+
+PyQt6-tools
+
+pyqt6-plugins
+
+PySide6

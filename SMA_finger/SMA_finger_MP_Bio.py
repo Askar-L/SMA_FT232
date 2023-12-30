@@ -276,7 +276,7 @@ def experiment_actuators(actuator_device): # Actuators Experiment 1
 
     pass
 
-def experiment_bio_01(actuator_device): # Actuators Experiment 1
+def experiment_test_validity(actuator_device): # Actuators Experiment 1
     wire_channles_P = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
     DUTYS_P = [1,0]
     INTERVALS_P = [2,0]
@@ -299,7 +299,38 @@ def experiment_bio_01(actuator_device): # Actuators Experiment 1
     actuator_device.communication_speed_test()
     # actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,is_show=False)
 
- 
+def experiment_bio_01(actuator_device): # Actuators Experiment 1
+    # wire_channles_P = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    # DUTYS_P = [0.01,0]
+    # INTERVALS_P = [0.5,0]
+    # actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,is_show=True)
+
+    wire_channles_P = actuator_device.CH_EVEN
+
+    flexsion_ch = [0x0,0x2]
+    extension_ch = [0x8,0xA,0xC]
+    adduction_ch = [0x6]
+    abducsion_ch = [0x4]
+
+    # Positive derections  
+    DUTYS_P_unit = [1,0]# [1,0.2]   # [预热 响应 维持]c 
+    INTERVALS_P_unit =[2,6]# [0.2,1]
+    DUTYS_P,INTERVALS_P = [],[]
+    num_cycles = 1
+
+    for _ in range(num_cycles):
+        DUTYS_P.extend(DUTYS_P_unit)
+        INTERVALS_P.extend(INTERVALS_P_unit)
+
+    print_info(DUTYS_P,INTERVALS_P)
+    
+    to_activated =[]
+    to_activated.extend(flexsion_ch)
+    to_activated.extend(adduction_ch)
+    to_activated.extend([0x08])
+
+    actuator_device.test_wires(to_activated,DUTYS_P,INTERVALS_P,is_show=False)
+
  
 def sensor_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False,lables=[]): # NONE FIFO Version
     # LABELS = ['Temp','AR_X','AR_Y','AR_Z','LA_X','LA_Y','LA_Z','Time']
@@ -550,7 +581,8 @@ def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_
     elif actuator_device==[]: 
         i2c_device = i2c.I2cController()
         # print(i2c_actuator_controller_URL)
-        i2c_device.configure(i2c_actuator_controller_URL,frequency = 1E6,clockstretching=False) # On IIC      
+        i2c_device.configure(i2c_actuator_controller_URL,frequency = 3E6,
+                            rdoptim=True,clockstretching=True) # On IIC      
         actuator_device = PWMGENERATOR(i2c_device,debug=False) # Link PCA9685
         # i2c_device.write()
 
