@@ -1,17 +1,32 @@
 Adafruit-Blinka # https://github.com/adafruit/Adafruit_Blinka
 
-pyftdi # a modified pyftdi is contained
+TKinter
+ttkbootstrap
+
+# pyftdi # a modified pyftdi is contained
+
+
+# Future
+ # https://cycleuser.gitbooks.io/kivy-guide-chinese/content/01-Kivy-Installation.
 
 # PyQt-Fluent-Widgets 
     # pip install PyQt-Fluent-Widgets -i https://pypi.org/simple/
 #  Install full feature
     # pip install "PyQt-Fluent-Widgets[full]" -i https://pypi.org/simple/
-# Pyqt5+PyQt-Fluent-Widgets+Pycharm环境安装 https://zhuanlan.zhihu.com/p/641791925
-PyQt6
-PyQt6-Fluent-Widgets
+    # Pyqt5+PyQt-Fluent-Widgets+Pycharm环境安装 https://zhuanlan.zhihu.com/p/641791925
 
-PyQt6-tools
+# PyQt6
+# PyQt6-Fluent-Widgets
 
-pyqt6-plugins
 
-PySide6
+# # Vscode pakages
+
+# # Qt for python
+# # PYQT Integration
+
+
+# PyQt6-tools
+
+# pyqt6-plugins
+
+# PySide6

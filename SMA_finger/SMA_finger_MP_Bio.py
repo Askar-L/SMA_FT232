@@ -2,8 +2,8 @@
 
 # * Multi Process version
 # Class of SMA single finger robot 
-# Created by Askar. Liu @ 20221020
-# Modified @20230221: Add logger
+# Created by Askar. Liu  
+ 
 
 # General funcs
 import os,sys,time,multiprocessing
