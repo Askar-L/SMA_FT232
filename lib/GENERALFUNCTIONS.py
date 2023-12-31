@@ -27,9 +27,9 @@ class Logger(object):
             os.makedirs(FIG_FOLDER)
 
         if filename is not None:
-            filename = FIG_FOLDER+time.strftime(
-                "_%b%d_%H.%M.%S",time.localtime(RUNTIME))+'.txt'
-
+            filename = FIG_FOLDER + time.strftime(
+                "_%m_%d_%H.%M.%S",time.localtime(RUNTIME))+'.txt'
+        print(filename)
         self.terminal = sys.stdout
         self.log = open(filename, "a")
  

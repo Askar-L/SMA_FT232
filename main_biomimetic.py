@@ -38,7 +38,7 @@ class exprimentGUI(object):
         self.root_window.geometry( str(self.width)+'x'+str(self.height) )  # 设置窗口大小 
 
         """ 点击右上角关闭窗体弹窗事件 """
-        self.root_window.protocol('WM_DELETE_WINDOW', self.clos_window)
+        self.root_window.protocol('WM_DELETE_WINDOW', self.exit_dialog)
         
         """ 组件容器创建 """
         
@@ -203,6 +203,9 @@ class exprimentGUI(object):
             self.terminal.write(message)
             self.log.insert(ttk.END, message+'\n')
 
+        def flush(self):
+            pass
+            
     # def scorller_print(self, message):
     #     self.scroller_log.insert(ttk.END, message+'\n')
     #     return message
@@ -220,25 +223,19 @@ class exprimentGUI(object):
         print( ' '.join(str(_.get())+'  ' for _ in self.output_levels))
         pass   
 
-    def clos_window(self):
-        # ans = askyesno(title='Exit', message='Exit?', )
-        # ttk.DatePickerPopup(bootstyle="warning")
-        app = ttk.Window(themename='darkly')
-        b1 = ttk.Button(app, text="Exit",bootstyle='danger')
-        b1.pack()
-        b2 = ttk.Button(app, text="Return")
-        b2.pack()
-        # default tooltip
-        ttk.ToolTip(b1, text="This is the default style")
+    def exit_dialog(self): 
+        
+        from ttkbootstrap.dialogs import MessageDialog
 
-        # styled tooltip
-        ttk.ToolTip(b2, text="This is dangerous", bootstyle=(ttk.DANGER, ttk.INVERSE))
+        dialog = MessageDialog(title='EXIT',
+            message="Close all outputs and Exit ?", parent=self.root_window, buttons=["No", "Yes:primary"],
+            alert=True, localize=False)
+        position = [int(root.winfo_screenwidth()/3),int(root.winfo_screenheight()/3) ] 
+        dialog.show(position)
 
-        if ans:
-            self.root_window.destroy()
-            sys.exit()
-        else:
-            return None
+        if dialog.result == 'Yes':
+            self.root_window.destroy(); sys.exit()
+        else: return None
 
 if __name__ == '__main__':
     sys.stdout = Logger()
@@ -251,7 +248,6 @@ if __name__ == '__main__':
 
 
     root = ttk.Window(hdpi=True,scaling=4,themename='darkly')#tk.Tk()# style.master # tk.Tk()
-
     # style = Style(theme='darkly') # darkly sandstone sandstone
     # root = style.master
     root.title("Contorl SMA")  # 设置窗口标题

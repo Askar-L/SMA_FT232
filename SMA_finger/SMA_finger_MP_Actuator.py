@@ -14,7 +14,7 @@ parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0,parentdir)
 
 # Driver funcs
-import pyftdi.i2c as i2c
+import pyftdimod.i2c as i2c
 
 from lsm6ds3.LSM6DS3 import Lsm6ds3_01 as IMUCHIP
 from pca9685.PCA9685 import Pca9685_01 as PWMGENERATOR
@@ -25,7 +25,7 @@ sys.stdout = Logger()
 sys.stderr = sys.stdout		# redirect std err, if necessary
 
 # Test settings
-import pyftdi.ftdi as ftdi
+import pyftdimod.ftdi as ftdi
 from multiprocessing import  Process
 
 
