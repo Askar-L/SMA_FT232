@@ -79,7 +79,7 @@ class exprimentGUI(object):
         """ 日志框 """
         margin_log_box = 0.0
         from ttkbootstrap.scrolled import ScrolledText,ScrolledFrame
-        self.scroller_log = ScrolledText(Frame_log,font=('Arial Light',8),bootstyle='dark',vbar=True,
+        self.scroller_log = ScrolledText(Frame_log,font=('Calibri Light',8),bootstyle='dark',vbar=True,
                                          autohide=True) # width=49, height=17,     
         self.scroller_log.place(relx=margin_log_box,rely=margin_log_box,
                            relheight=1-2*margin_log_box,relwidth=1-2*margin_log_box)
@@ -145,7 +145,7 @@ class exprimentGUI(object):
         self.myThread .start()
 
     def butten_connect(self): 
-        print('Connecting the PCA9685')  
+        print('\nConnecting the PCA9685')  
         
         RUNTIME = time.perf_counter()
     
@@ -165,7 +165,7 @@ class exprimentGUI(object):
         #     self.process_ctrl = multiprocessing.Process(
         #                         target= ctrlProcess,args=(url_0,'ADC001',self.process_share_dict))   
         #     self.process_ctrl.daemon = True
-
+        
         self.actuator_device = ctrlProcess(url_0,'ADC001')
 
     def butten_stop(self): 
