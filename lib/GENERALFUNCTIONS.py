@@ -38,7 +38,7 @@ class Logger(object):
         self.log.write(message)
  
     def flush(self):
-        pass
+        sys.stdout.flush()
     
     def _eg_codes():
         path = os.path.abspath(os.path.dirname(__file__))

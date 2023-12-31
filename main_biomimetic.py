@@ -14,7 +14,6 @@ from tkinter.messagebox import askyesno
 from tkinter.scrolledtext import ScrolledText
 import threading,multiprocessing
 
-from ttkbootstrap import Style
 import ttkbootstrap as ttk
 
 from lib.GENERALFUNCTIONS import *
@@ -62,7 +61,7 @@ class exprimentGUI(object):
         
     def page_scale_contoller(self,container_window):
         
-        log_frame_width = 0.3
+        log_frame_width = 0.4
         Frame_log = ttk.Frame(container_window)   
         Frame_log.place(relx=0,rely=0,relheight=1,relwidth=log_frame_width)
 
@@ -79,15 +78,13 @@ class exprimentGUI(object):
 
         """ 日志框 """
         margin_log_box = 0.0
-        # from ttkbootstrap.scrolled import ScrolledText
-        self.scroller_log = ScrolledText (Frame_log) # width=49, height=17,
-        # self.scroller_log = ScrolledText (Frame_log, autohide=False,bootstyle='primary') # width=49, height=17,
-        # self.scroller_log.configure(state="readonly")
-        
+        from ttkbootstrap.scrolled import ScrolledText,ScrolledFrame
+        self.scroller_log = ScrolledText(Frame_log,font=('Arial Light',8),bootstyle='dark',vbar=True,
+                                         autohide=True) # width=49, height=17,     
         self.scroller_log.place(relx=margin_log_box,rely=margin_log_box,
                            relheight=1-2*margin_log_box,relwidth=1-2*margin_log_box)
         # self.redirect_std()
-        sys.stdout = self.ScollerLogger(self.scroller_log)
+        sys.stdout = self.ScollerLogger(self.scroller_log,Frame_log)
         sys.stderr = sys.stdout
 
         # Scales
@@ -122,16 +119,17 @@ class exprimentGUI(object):
                          relheight=1-2*margin_scale_H-0.1, relwidth = 1/(num_scale)-margin_scale_W)
         
         # Frame Butten
-        num_butten = 3
+        butten_list = ['Connect','Stop ALL','APPLY','Exit']
+        butten_style_list = ['primary','danger','warning','scondary']
+        butten_func_list = [self.butten_connect,self.butten_stop,self.butten_apply,self.exit_dialog]
 
+        num_butten = len(butten_list)
         frame_button = ttk.Frame(frame_scale_butten) 
         frame_button.place( relx = 0, rely = scale_height+margin_scale_butten_W,
                     relheight = 1-scale_height-margin_scale_butten_W,relwidth=0.2*(num_butten))
 
         
-        butten_list = ['Connect','Stop ALL','APPLY']
-        butten_style_list = ['primary','danger','warning']
-        butten_func_list = [self.butten_connect,self.butten_stop,self.butten_apply]
+
 
         for _i in range(num_butten):
             butten_connect = ttk.Button(frame_button, width=20,
@@ -189,19 +187,23 @@ class exprimentGUI(object):
         if disp:
             print(' '.join(str(int(100*_.get()))+'  ' for _ in self.output_levels))
 
-        # set chs)
-        for channels,ch_DR, in zip( self.channels,self.output_levels ):
-            self.actuator_device.setDutyRatioCH(channels,ch_DR.get(),relax=False)
-
+        try:
+            for channels,ch_DR, in zip( self.channels,self.output_levels ):
+                self.actuator_device.setDutyRatioCH(channels,ch_DR.get(),relax=False)
+        except AttributeError:
+            print('No connection, please check connection!')
     
     class ScollerLogger(object):
-        def __init__(self, scroller=[]):
+        def __init__(self, scroller=[],master=[]):
             self.terminal = sys.stdout
             self.log = scroller
+            self.master = master
  
         def write(self, message):
             self.terminal.write(message)
-            self.log.insert(ttk.END, message+'\n')
+            self.log.insert(ttk.END, message)
+            self.log.update()
+            self.log.text.yview_moveto(1)
 
         def flush(self):
             pass
@@ -234,6 +236,11 @@ class exprimentGUI(object):
         dialog.show(position)
 
         if dialog.result == 'Yes':
+            try :
+                self.butten_stop()
+            except AttributeError as err:
+                print('No Exsisting Connection, exiting')
+                pass
             self.root_window.destroy(); sys.exit()
         else: return None
 
@@ -247,7 +254,7 @@ if __name__ == '__main__':
     # root.tk.call('tk', 'scaling', ScaleFactor/100)    #设置缩放因子
 
 
-    root = ttk.Window(hdpi=True,scaling=4,themename='darkly')#tk.Tk()# style.master # tk.Tk()
+    root = ttk.Window(hdpi=True,scaling=3,themename='darkly')#tk.Tk()# style.master # tk.Tk()
     # style = Style(theme='darkly') # darkly sandstone sandstone
     # root = style.master
     root.title("Contorl SMA")  # 设置窗口标题

@@ -108,9 +108,9 @@ def experiment_bio_01(actuator_device): # Actuators Experiment 1
 
 def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_share_dict={}): # PCA 
     
-    PROCESSRUNTIME = time.perf_counter()
-    print("\nCtrlProcess Starts:",PROCESSRUNTIME)
-    print("\t",PROCESSRUNTIME- RUNTIME,"s after runtime:",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)))
+    PROCESSRUNTIME = time.time()
+    print("\nCtrlProcess Starts:")
+    print("",PROCESSRUNTIME- RUNTIME,"s after runtime:",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)))
     
     # Address Setting
     pca_addr = 0x40 # PWM device address
