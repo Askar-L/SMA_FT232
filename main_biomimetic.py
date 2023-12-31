@@ -8,6 +8,7 @@
 
 import sys,ctypes
 import time
+
 # import tkinter as tk
 from tkinter.messagebox import askyesno
 from tkinter.scrolledtext import ScrolledText
@@ -16,9 +17,14 @@ import threading,multiprocessing
 from ttkbootstrap import Style
 import ttkbootstrap as ttk
 
+from lib.GENERALFUNCTIONS import *
+from SMA_finger.SMA_finger_MP import *
+
+
+
 class exprimentGUI(object):
 
-    def __init__(self, root_window, width=[], height=[]):
+    def __init__(self, root_window,process_manager, width=[], height=[]):
         self.root_window = root_window
         
         screen_width = root.winfo_screenwidth()
@@ -26,65 +32,37 @@ class exprimentGUI(object):
         window_width = root.winfo_width()
 
         if width==[]:    
-            self.width = int(screen_width * 1)
-            self.height = int(screen_height * 0.8)
+            self.width = int(screen_width * 0.6)
+            self.height = int(screen_height * 0.6)
 
         self.root_window.geometry( str(self.width)+'x'+str(self.height) )  # 设置窗口大小 
 
         """ 点击右上角关闭窗体弹窗事件 """
-        # self.root_window.protocol('WM_DELETE_WINDOW', lambda: self.thread_it(self.clos_window))
+        self.root_window.protocol('WM_DELETE_WINDOW', self.clos_window)
         
         """ 组件容器创建 """
         
-        self.nav_bar_weidth = 120
-        self.frame_nav_bar = ttk.Frame(self.root_window,) 
+        self.nav_bar_width = 0.04
+        self.frame_nav_bar = ttk.Frame(self.root_window,bootstyle="primary") 
 
-        self.frame_nav_bar.place(relx=0,rely=0,relheight=1,width=self.nav_bar_weidth)
+        self.frame_nav_bar.place(relx=0,rely=0,relheight=1,relwidth=self.nav_bar_width)
 
         margin_page_H = 0.02
-        self.frame_page = ttk.Frame(self.root_window) 
-        self.frame_page.place( x = self.nav_bar_weidth ,rely = margin_page_H,
-                              relheight = 1-2*margin_page_H, width=screen_width-self.nav_bar_weidth)
+        self.frame_page = ttk.Frame(self.root_window,) 
+        self.frame_page.place( relx = self.nav_bar_width ,rely = margin_page_H,
+                              relheight = 1-2*margin_page_H, relwidth=1-self.nav_bar_width)
         # self.page_frame.place(x=self.nav_bar_weidth,rely=0,relheight=1,width=window_width-self.nav_bar_weidth)
 
-        # self.thread_it(self.page_1(container_window=self.page_frame))
-        self.thread_it(self.page_scale_contoller(container_window=self.frame_page))
-
-    def page_1(self,container_window):
         
-        log_frame = tk.Frame(container_window,background="#FF00FF")  
-        log_frame.place(relx=0,rely=0,relheight=0.4,relwidth=1)
-        
-        scale1 = tk.Scale(container_window,label="sc1",
-                               length=600,width=60,orient=tk.VERTICAL,
-                               from_=0,to=100,resolution=0.5,digits=4,
-                               command=self.run_log_print)         
-        scale1.place(relx=1,rely=0,relheight=1,relwidth=0.2)
+        # Multi-Processing
+        self.page_scale_contoller(container_window=self.frame_page)
 
-        """ 日志框 """
-        run_log = ScrolledText(log_frame, font=('Calibri Light', 20), width=49, height=17)
-        run_log.place(relx=0.02,rely=0.02,relheight=0.96,relwidth=0.96)
-
-        runs_button_frame = tk.Frame(container_window) 
-        runs_button_frame.place(relx=0,rely=0.4,relheight=0.2,relwidth=0.4)
-
-        """ 操作按钮 """
-        butten_1 = tk.Button(runs_button_frame, text='Print', font=('Calibri Light', 20,'bold'), 
-                                    fg="white", bg="#1E90FF", width=20,height=1,
-                                      command=lambda: self.thread_it(self.print1))
-        butten_1.place(relx=0,rely=0,relheight=1,relwidth=0.5)
-
-        butten_2 = tk.Button(runs_button_frame, text='Print', font=('Calibri Light', 20, 'bold'), 
-                                    fg="white", bg="#1E90FF", width=25,
-                                      command=lambda: self.thread_it(self.print2))
-        butten_2.place(relx=0.5,rely=0,relheight=1,relwidth=0.5)
+        self.channels = PWMGENERATOR.CH_EVEN
 
         
-        pass
-    
     def page_scale_contoller(self,container_window):
         
-        log_frame_width = 0.20
+        log_frame_width = 0.3
         Frame_log = ttk.Frame(container_window)   
         Frame_log.place(relx=0,rely=0,relheight=1,relwidth=log_frame_width)
 
@@ -101,52 +79,64 @@ class exprimentGUI(object):
 
         """ 日志框 """
         margin_log_box = 0.0
-        from ttkbootstrap.scrolled import ScrolledText
-
-        self.run_log = ScrolledText (Frame_log,width=49, height=17, autohide=True)
-        # self.run_log = ttk.ScrolledText(Frame_log,font=('Calibri Light',20), width=49, height=17,
-        #                           highlightthickness=1 )
-        self.run_log.place(relx=margin_log_box,rely=margin_log_box,
+        # from ttkbootstrap.scrolled import ScrolledText
+        self.scroller_log = ScrolledText (Frame_log) # width=49, height=17,
+        # self.scroller_log = ScrolledText (Frame_log, autohide=False,bootstyle='primary') # width=49, height=17,
+        # self.scroller_log.configure(state="readonly")
+        
+        self.scroller_log.place(relx=margin_log_box,rely=margin_log_box,
                            relheight=1-2*margin_log_box,relwidth=1-2*margin_log_box)
-
+        # self.redirect_std()
+        sys.stdout = self.ScollerLogger(self.scroller_log)
+        sys.stderr = sys.stdout
 
         # Scales
         num_scale = 8
         scales = []
         margin_scale_W = margin_scale_butten_W
         margin_scale_H = 0
-        a = 1
-        self.run_log_print(str(frame_scale.winfo_vrootwidth()))
+        self.output_levels = []
+
+        # Variables for  callback
+        for _ in range(num_scale): self.output_levels.append(ttk.DoubleVar()) 
+            # self.output_levels[-1].set(0)
+            # self.output_levels[_].trace_add("write",self.callback_scorller)
+
+        
         # scales_colors = ["#%02x%02x%02x"%(25,255-int((_+1)*255/(num_scale+10)),255) for _ in range(num_scale)]  
         # self.run_log_print(str(scales_colors))
-
+ 
         for _i in range(num_scale):
-            self.run_log_print(str(_i))
-
-            scales.append( ttk.Scale(frame_scale,length=200,value=0,orient=ttk.VERTICAL, 
-                                     from_=4095,to=0,command=self.run_log_print,variable = a )      )
-             
-            scales[-1].place(relx = _i/(num_scale), rely = margin_scale_H,
-                         relheight=1-2*margin_scale_H, relwidth = 1/(num_scale)-margin_scale_W)
+            scales.append( ttk.Scale(frame_scale,length=200,value=0,orient=ttk.VERTICAL,
+                            takefocus=1,bootstyle="SUCCESS",name = 'ch'+str(_i), from_= 1,
+                            to=0,command=[],variable = self.output_levels[_i] ) )#self.callback_scorller
             
-
-
+            _ch_label_frmae = ttk.Labelframe(frame_scale,text=' Ch '+str(_i)+' ',bootstyle="info",)
+            _ch_label_frmae.place(relx = _i/(num_scale), rely = margin_scale_H,
+                         relheight=0.1-2*margin_scale_H, relwidth = 1/(num_scale)-margin_scale_W)
+            
+            _ch_label = ttk.Entry(_ch_label_frmae, textvariable= self.output_levels[_i] )
+            _ch_label.place(relx=0,rely=0,relheight=1,relwidth=1)   
+            
+            scales[-1].place(relx = _i/(num_scale), rely = 0.1+margin_scale_H,
+                         relheight=1-2*margin_scale_H-0.1, relwidth = 1/(num_scale)-margin_scale_W)
+        
         # Frame Butten
+        num_butten = 3
+
         frame_button = ttk.Frame(frame_scale_butten) 
         frame_button.place( relx = 0, rely = scale_height+margin_scale_butten_W,
-                           
-                    relheight = 1-scale_height-margin_scale_butten_W,relwidth=0.4)
+                    relheight = 1-scale_height-margin_scale_butten_W,relwidth=0.2*(num_butten))
 
-        butten_1 = ttk.Button(frame_button, text='Stop ALL', 
-                                    width=20,
-                                      command=lambda: self.thread_it(self.print1))
-        butten_1.place(relx=0,rely=0,relheight=1,relwidth=0.5)
+        
+        butten_list = ['Connect','Stop ALL','APPLY']
+        butten_style_list = ['primary','danger','warning']
+        butten_func_list = [self.butten_connect,self.butten_stop,self.butten_apply]
 
-        butten_2 = ttk.Button(frame_button, text='Print',  
-                                     width=25,
-                                      command=lambda: self.thread_it(self.print2))
-        butten_2.place(relx=0.5,rely=0,relheight=1,relwidth=0.5)
-
+        for _i in range(num_butten):
+            butten_connect = ttk.Button(frame_button, width=20,
+                    text= butten_list[_i],style=butten_style_list[_i], command = butten_func_list[_i])
+            butten_connect.place(relx = _i/num_butten,rely=0,relheight=1,relwidth = 1/num_butten)
         
         pass
 
@@ -156,67 +146,124 @@ class exprimentGUI(object):
         self.myThread .setDaemon(True)  # 主线程退出就直接让子线程跟随退出,不论是否运行完成。
         self.myThread .start()
 
-    def print1(self):
-        i = 0
-        start_t = time.time()# time.process_time()
-
-        for i in range(201):
-            # i += 1
-            tip_content = f'第{i}次打印'
-            self.run_log_print(message=tip_content)
-            if i%100 == 99: 
-                currunt_t = time.time()# time.process_time()
-                
-                _massage = f'Freq: {i/(currunt_t - start_t)}'
-                self.run_log_print(message= _massage)
+    def butten_connect(self): 
+        print('Connecting the PCA9685')  
+        
+        RUNTIME = time.perf_counter()
     
-        self.run_log_print(message='打印完成')
+        url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0') 
+        url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/0')
+        url_2 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FD/1')
+        url_3 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FC/1')
 
-    def print2(self):
-        for i in range(100, 200):
-            tip_content = f'第{i}次打印2'
-            self.run_log_print(message=tip_content)
-            time.sleep(0.05)  # 睡眠
-        self.run_log_print(message='打印完成')
+        # MP on
+        print("SMA Finger MultiProcess: \nTwo thread with Python threading library")
+            # url_PCA,url_LSM,PCA_device,LSM_device = findFtdiAddr()
 
-    def run_log_print(self, message):
-        self.run_log.insert(ttk.END, message+'\n')
-        pass     
+        # self.process_manager =  process_manager #multiprocessing.Manager()
+        # with self.process_manager as process_manager:
+        #     self.process_share_dict = process_manager.dict()
+        #     angle_sensor_ID = 'ADC001'
+        #     self.process_ctrl = multiprocessing.Process(
+        #                         target= ctrlProcess,args=(url_0,'ADC001',self.process_share_dict))   
+        #     self.process_ctrl.daemon = True
+
+        self.actuator_device = ctrlProcess(url_0,'ADC001')
+
+    def butten_stop(self): 
+        print('Stopping all channel output.')
+        for ch in self.output_levels: ch.set(0)
+        self.butten_apply(disp=False)
+
+    def butten_apply(self,disp=True):
+        # print(self.actuator_device)
+        if disp:
+            print('Applying channel output (%): ')
+        for ch_DR in self.output_levels:
+            val = ch_DR.get()
+            if val > 1: 
+                ch_DR.set(val / (10** (len(str(val))-2) ))
+            elif val>0: ch_DR.set(val)
+            else: ch_DR.set(0)
+
+        if disp:
+            print(' '.join(str(int(100*_.get()))+'  ' for _ in self.output_levels))
+
+        # set chs)
+        for channels,ch_DR, in zip( self.channels,self.output_levels ):
+            self.actuator_device.setDutyRatioCH(channels,ch_DR.get(),relax=False)
+
+    
+    class ScollerLogger(object):
+        def __init__(self, scroller=[]):
+            self.terminal = sys.stdout
+            self.log = scroller
+ 
+        def write(self, message):
+            self.terminal.write(message)
+            self.log.insert(ttk.END, message+'\n')
+
+    # def scorller_print(self, message):
+    #     self.scroller_log.insert(ttk.END, message+'\n')
+    #     return message
+
+    def callback_scorller(self, var,index,mode): #message=[],
+         
+        for ch in self.output_levels:
+            val = ch.get()
+            if val > 100: ch.set(val*0.001)
+            elif val > 1: ch.set(val*0.01)
+            elif val>0: ch.set(val)
+            else: ch.set(0)
+
+        
+        print( ' '.join(str(_.get())+'  ' for _ in self.output_levels))
+        pass   
 
     def clos_window(self):
-        ans = askyesno(title='Exit', message='Exit?', )
+        # ans = askyesno(title='Exit', message='Exit?', )
+        # ttk.DatePickerPopup(bootstyle="warning")
+        app = ttk.Window(themename='darkly')
+        b1 = ttk.Button(app, text="Exit",bootstyle='danger')
+        b1.pack()
+        b2 = ttk.Button(app, text="Return")
+        b2.pack()
+        # default tooltip
+        ttk.ToolTip(b1, text="This is the default style")
+
+        # styled tooltip
+        ttk.ToolTip(b2, text="This is dangerous", bootstyle=(ttk.DANGER, ttk.INVERSE))
+
         if ans:
             self.root_window.destroy()
             sys.exit()
         else:
             return None
 
-
 if __name__ == '__main__':
+    sys.stdout = Logger()
+    sys.stderr = sys.stdout		# redirect std err, if necessary
 
-
+    
     # ctypes.windll.shcore.SetProcessDpiAwareness(1) #调用api设置成由应用程序缩放
     # ScaleFactor=ctypes.windll.shcore.GetScaleFactorForDevice(0) #调用api获得当前的缩放因子
     # root.tk.call('tk', 'scaling', ScaleFactor/100)    #设置缩放因子
 
 
-    root = ttk.Window(hdpi=False,scaling=2.5)#tk.Tk()# style.master # tk.Tk()
+    root = ttk.Window(hdpi=True,scaling=4,themename='darkly')#tk.Tk()# style.master # tk.Tk()
 
-    style = Style(theme='darkly') # darkly sandstone sandstone
-    root = style.master
+    # style = Style(theme='darkly') # darkly sandstone sandstone
+    # root = style.master
     root.title("Contorl SMA")  # 设置窗口标题
-
-    
-
-
 
     # """ tk界面置顶 """
     # root.attributes("-topmost", 1)
 
     """ 创建Gui类对象 """
-    test_gui = exprimentGUI(root)
+    test_gui = exprimentGUI(root,process_manager=multiprocessing.Manager())
     
     """ 初始化GUi组件 """
     root.mainloop()
+
 
      

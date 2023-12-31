@@ -22,8 +22,7 @@ from pca9685.PCA9685 import Pca9685_01 as PWMGENERATOR
 from ads1115.TIADS1115 import HW526Angle as ANGLESENSOR
 
 from lib.GENERALFUNCTIONS import *
-sys.stdout = Logger()
-sys.stderr = sys.stdout		# redirect std err, if necessary
+
 
 # Test settings
 import pyftdimod.ftdi as ftdi
@@ -42,13 +41,13 @@ if True: # Experiment settings
     VOT = 9 # Vlots
     LOAD = 20 # Grams
 
-    EXIT_CHECK_FREQ = 1 #S, EXIT check!
+    EXIT_CHECK_FREQ = 0.5 #S, EXIT check!
 
     print('Multi process version of SMA finger')
     print("Current time",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime()))
     print("RUNTIME",time.strftime('%m.%dth,%HH:%MM:%SS .%F', time.localtime(RUNTIME)))
     
-    # RUNTIME = time.time()
+    # RUNTIME = time.perf_counter()
 
     do_plot = DO_PLOT
     
@@ -118,7 +117,7 @@ def print_info(dutys_P,intervals_P):
 #         pass
     
 #     def drive_axis(self,dutyRatio,time):
-#         # _st = time.time()
+#         # _st = time.perf_counter()
 #         # self.pca_list[0].
 #         pass
 
@@ -254,51 +253,7 @@ def i2c_test():
 
     return []
 
-
-def experiment_actuators(actuator_device): # Actuators Experiment 1
-    wire_channles_P = [12,0] # DR[0.09, 1, 0.2, 0.14, 0.1, 0] Duration[1, 0.3, 2, 2, 2, 2]
-    # fan_channles = [4,6] 
-    
-    # Positive derections
-    DUTYS_P = [0.4,0]# [1,0.2]   # [预热 响应 维持]c 
-    INTERVALS_P =[2,0.1]# [0.2,1]
-    
-    # # Reversed derections
-    # DUTYS_M = [1,0.3]# [1,0.2]   # [预热 响应 维持]c
-    # INTERVALS_M =[0.2,2]# [0.2,1]
-
-    print_info(DUTYS_P,INTERVALS_P)
-    # actuator_device.test_wires(fan_channles,DUTYS_P,INTERVALS_P,conf0=True)
-    
-    actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,conf0=True)
-    # Extensor direction: DR [1,0.3] Duration [0.2,2]
-    # actuator_device.test_wires(wire_channles_M,DUTYS_M,INTERVALS_M,conf0=True)
-
-    pass
-
-def experiment_test_validity(actuator_device): # Actuators Experiment 1
-    wire_channles_P = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-    DUTYS_P = [1,0]
-    INTERVALS_P = [2,0]
-    actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,is_show=True)
-
-
-    wire_channles_P = actuator_device.CH_EVEN
-
-    # Positive derections  
-    DUTYS_P_unit = [0.8,0]# [1,0.2]   # [预热 响应 维持]c 
-    INTERVALS_P_unit =[0.0,0.0]# [0.2,1]
-    DUTYS_P,INTERVALS_P = [],[]
-    num_cycles = 1000
-
-    for _ in range(num_cycles):
-        DUTYS_P.extend(DUTYS_P_unit)
-        INTERVALS_P.extend(INTERVALS_P_unit)
-
-    print_info(DUTYS_P,INTERVALS_P)
-    actuator_device.communication_speed_test()
-    # actuator_device.test_wires(wire_channles_P,DUTYS_P,INTERVALS_P,is_show=False)
-
+ 
 def experiment_bio_01(actuator_device): # Actuators Experiment 1
     # wire_channles_P = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
     # DUTYS_P = [0.01,0]
@@ -370,7 +325,7 @@ def sensor_LSM6DS3(i2c_sensor_controller_URL=[],sensor_device=[],do_plot=False,l
     if do_plot: plot_counter = 0
     while continue_sensor:
         reading = sensor_device.readSensors(1)
-        reading.append(time.time()-RUNTIME)
+        reading.append(time.perf_counter()-RUNTIME)
 
         data.append( reading ) # 0.021474266052246095 S
         # print(reading)
@@ -455,7 +410,8 @@ def sense_LSM_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     return data
 
 def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],lables=[],sensor_ID="ADC000",process_share_dict={}): # TODO
-    print("sense_ADS1115 starts at: ",time.time()- RUNTIME,"s, Related to ",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)) )
+    print("sense_ADS1115 starts at: ",time.perf_counter()- RUNTIME,
+          "s, Related to ",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)) )
     ads_addr = 0x48 # ADS1115 address
     check_interval = int(EXIT_CHECK_FREQ/0.0008)
 
@@ -500,7 +456,7 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
     # temp_i = 0
     while continue_senseing:
         reading = adc_01.readSensors(is_show=False)
-        reading.append( time.time()- RUNTIME)
+        reading.append( time.perf_counter()- RUNTIME)
 
         data.append( reading ) # 0.021474266052246095 S
         process_share_dict[sensor_ID] = reading
@@ -531,7 +487,7 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
     return data
 
 def sensorProcess(mode="Angle",i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False,sensor_ID="SNS000",save_data = True,process_share_dict={}): # NONE FIFO Version
-    PROCESSRUNTIME = time.time()
+    PROCESSRUNTIME = time.perf_counter()
     url = i2c_sensor_controller_URL
 
     print("\nSensorProcess Starts:",PROCESSRUNTIME,"With sensor: ",mode)
@@ -560,7 +516,7 @@ def sensorProcess(mode="Angle",i2c_sensor_controller_URL=[],LSM_device=[],do_plo
 
 def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_share_dict={}): # PCA 
     
-    PROCESSRUNTIME = time.time()
+    PROCESSRUNTIME = time.perf_counter()
     print("\nCtrlProcess Starts:",PROCESSRUNTIME)
     print("\t",PROCESSRUNTIME- RUNTIME,"s after runtime:",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)))
     
@@ -615,11 +571,11 @@ def pid_to(target_angle,get_angle,apply_DR):
     contorller = PID(k_p, k_i, k_d,sample_time=1/1200,output_limits= limit_DR) # # 创建PID控制器
     contorller.setpoint = target_angle
 
-    time_st = time.time()
+    time_st = time.perf_counter()
     ctrl_DR_history = []
     
     while True: # abs(current_angle - target_angle) > 0.05
-        current_t = time.time()- RUNTIME
+        current_t = time.perf_counter()- RUNTIME
         current_angle = get_angle()  # 获取当前角度
         
         if current_t < RESTING: current_target = current_angle + current_t*5
@@ -641,7 +597,7 @@ def pid_to(target_angle,get_angle,apply_DR):
     return ctrl_DR_history
 
 def pidProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_share_dict={}): # PCA 
-    PROCESSRUNTIME = time.time()
+    PROCESSRUNTIME = time.perf_counter()
     print("\nCtrlProcess Starts:",PROCESSRUNTIME)
     print("\t",PROCESSRUNTIME- RUNTIME,"s after runtime:",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)))
     mode = 'PID'; labels = ['Angle','DutyRatio','Target','Time']
@@ -714,7 +670,9 @@ def pidProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_s
 
 
 if __name__=='__main__': # Test codes # Main process
-    
+    sys.stdout = Logger()
+    sys.stderr = sys.stdout		# redirect std err, if necessary
+
     # Log experiment details
         # console recoder
         # data logger

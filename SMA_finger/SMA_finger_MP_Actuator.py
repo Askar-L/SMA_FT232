@@ -395,7 +395,8 @@ def sense_LSM_FIFO(i2c_sensor_controller_URL=[],do_plot=False): #  FIFO Version
     sensor_device.i2c_controller.close()
     return data
 
-def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],lables=[],sensor_ID="ADC000",process_share_dict={}): # TODO
+def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],lables=[],
+                  sensor_ID="ADC000",process_share_dict={}): # TODO
     print("sense_ADS1115 starts at: ",time.time()- RUNTIME,"s, Related to ",time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(RUNTIME)) )
     ads_addr = 0x48 # ADS1115 address
     check_interval = int(EXIT_CHECK_FREQ/0.0008)
@@ -471,7 +472,8 @@ def sense_ADS1115(i2c_sensor_controller_URL=[],adc_01=[],do_plot=False,mode=[],l
     adc_01.i2c_controller.close()
     return data
 
-def sensorProcess(mode="Angle",i2c_sensor_controller_URL=[],LSM_device=[],do_plot=False,sensor_ID="SNS000",save_data = True,process_share_dict={}): # NONE FIFO Version
+def sensorProcess(mode="Angle",i2c_sensor_controller_URL=[],LSM_device=[],
+                  do_plot=False,sensor_ID="SNS000",save_data = True,process_share_dict={}): # NONE FIFO Version
     PROCESSRUNTIME = time.time()
     url = i2c_sensor_controller_URL
 
