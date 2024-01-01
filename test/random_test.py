@@ -25,3 +25,6 @@ for _i in range(num_ch):
     print(int_reading)
 
     _res.append( int_reading )
+# %%
+print(hex(0xF-2)[-1])
+    

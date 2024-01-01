@@ -14,6 +14,10 @@ from matplotlib import pyplot as plt
 from typing import Any, Iterable, Mapping, Optional, Tuple, Union
 from matplotlib.pyplot import MultipleLocator
 
+from pyftdimod.i2c import I2cIOError
+from pyftdimod.usbtools import UsbToolsError
+
+
 RUNTIME = time.time()
 FIG_FOLDER = "./REC/"
 DATA_FOLDER = "./REC/"

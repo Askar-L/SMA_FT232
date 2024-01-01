@@ -91,7 +91,7 @@ class exprimentGUI(object):
         num_scale = 8
         scales = []
         margin_scale_W = margin_scale_butten_W
-        margin_scale_H = 0
+        margin_scale_H = 0.02
         self.output_levels = []
 
         # Variables for  callback
@@ -102,21 +102,37 @@ class exprimentGUI(object):
         
         # scales_colors = ["#%02x%02x%02x"%(25,255-int((_+1)*255/(num_scale+10)),255) for _ in range(num_scale)]  
         # self.run_log_print(str(scales_colors))
- 
+
         for _i in range(num_scale):
-            scales.append( ttk.Scale(frame_scale,length=200,value=0,orient=ttk.VERTICAL,
-                            takefocus=1,bootstyle="SUCCESS",name = 'ch'+str(_i), from_= 1,
-                            to=0,command=[],variable = self.output_levels[_i] ) )#self.callback_scorller
+            height_butten = 0.06
+
+            _ch_main_frame = ttk.Frame(frame_scale,)
+            _ch_main_frame.place(relx = _i/(num_scale), rely = margin_scale_H,
+                         relheight=1, relwidth = 1/(num_scale)-margin_scale_W)
+
+            _ch_label_frmae = ttk.Labelframe(_ch_main_frame,text=' Ch '+str(_i)+' ',bootstyle="info",)
+            _ch_label_frmae.place(relx = 0, rely = 0, relheight=0.11, relwidth = 1-margin_scale_W)
             
-            _ch_label_frmae = ttk.Labelframe(frame_scale,text=' Ch '+str(_i)+' ',bootstyle="info",)
-            _ch_label_frmae.place(relx = _i/(num_scale), rely = margin_scale_H,
-                         relheight=0.1-2*margin_scale_H, relwidth = 1/(num_scale)-margin_scale_W)
-            
-            _ch_label = ttk.Entry(_ch_label_frmae, textvariable= self.output_levels[_i] )
+            _ch_label = ttk.Entry(_ch_label_frmae, textvariable = self.output_levels[_i] )
             _ch_label.place(relx=0,rely=0,relheight=1,relwidth=1)   
             
-            scales[-1].place(relx = _i/(num_scale), rely = 0.1+margin_scale_H,
-                         relheight=1-2*margin_scale_H-0.1, relwidth = 1/(num_scale)-margin_scale_W)
+
+            _ch_butten_max = ttk.Button(_ch_main_frame,text='MAX',bootstyle="success-outline",
+                                        command = lambda arg=_i : self.output_levels[arg].set(1))
+            
+            _ch_butten_max.place(relx=0,rely=0.1+margin_scale_H,relheight=height_butten,relwidth=1)
+
+
+            _ch_butten_min = ttk.Button(_ch_main_frame,text='MIN',bootstyle="success-outline",
+                                        command = lambda arg=_i : self.output_levels[arg].set(0))
+            _ch_butten_min.place(relx=0,rely=1-height_butten-margin_scale_H,relheight=height_butten,relwidth=1)
+
+            scales.append( ttk.Scale(_ch_main_frame,length=200,value=0,orient=ttk.VERTICAL,
+                            takefocus=1,bootstyle="SUCCESS",name = 'ch'+str(_i), from_= 1,
+                            to=0,command=[],variable = self.output_levels[_i] ) )#self.callback_scorller
+            scales[-1].place(relx = 0, rely = 0.1+2*height_butten, relheight=1-0.1-4*height_butten, relwidth = 1-margin_scale_W)
+
+            # 
         
         # Frame Butten
         butten_list = ['Connect','Stop ALL','APPLY','Exit']
@@ -148,48 +164,39 @@ class exprimentGUI(object):
         print('\nConnecting the PCA9685')  
         
         RUNTIME = time.perf_counter()
-    
-        url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0') 
-        url_1 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FE/0')
-        url_2 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FD/1')
-        url_3 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FC/1')
 
-        # MP on
-        print("SMA Finger MultiProcess: \nTwo thread with Python threading library")
-            # url_PCA,url_LSM,PCA_device,LSM_device = findFtdiAddr()
-
-        # self.process_manager =  process_manager #multiprocessing.Manager()
-        # with self.process_manager as process_manager:
-        #     self.process_share_dict = process_manager.dict()
-        #     angle_sensor_ID = 'ADC001'
-        #     self.process_ctrl = multiprocessing.Process(
-        #                         target= ctrlProcess,args=(url_0,'ADC001',self.process_share_dict))   
-        #     self.process_ctrl.daemon = True
-        
-        self.actuator_device = ctrlProcess(url_0,'ADC001')
+        url_test_len = 4
+        # url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0')
+        actuator_device = []
+        for _i in range(url_test_len):
+            _url = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:F'+ hex(0xF-_i)[-1]+'/0')
+            try: 
+                print("\nConnecting: ",_url)
+                actuator_device = ctrlProcess(_url,'ADC001')
+            except  Exception as err: 
+                print(err)
+            if actuator_device:
+                self.actuator_device = actuator_device
+                break
 
     def butten_stop(self): 
-        print('Stopping all channel output.')
+        print('Stopping all channel output')
         for ch in self.output_levels: ch.set(0)
         self.butten_apply(disp=False)
 
     def butten_apply(self,disp=True):
-        # print(self.actuator_device)
-        if disp:
-            print('Applying channel output (%): ')
         for ch_DR in self.output_levels:
             val = ch_DR.get()
-            if val > 1: 
-                ch_DR.set(val / (10** (len(str(val))-2) ))
+            # print(val)
+            if val > 1: ch_DR.set(val / (10** (len(str(val))-2) ))
             elif val>0: ch_DR.set(val)
             else: ch_DR.set(0)
-
-        if disp:
-            print(' '.join(str(int(100*_.get()))+'  ' for _ in self.output_levels))
-
         try:
             for channels,ch_DR, in zip( self.channels,self.output_levels ):
                 self.actuator_device.setDutyRatioCH(channels,ch_DR.get(),relax=False)
+            if disp: 
+                print('Applying channel output (%): ')
+                print(' '.join(str(int(100*_.get()))+'  ' for _ in self.output_levels))
         except AttributeError:
             print('No connection, please check connection!')
     
@@ -220,7 +227,6 @@ class exprimentGUI(object):
             elif val > 1: ch.set(val*0.01)
             elif val>0: ch.set(val)
             else: ch.set(0)
-
         
         print( ' '.join(str(_.get())+'  ' for _ in self.output_levels))
         pass   
@@ -238,9 +244,8 @@ class exprimentGUI(object):
         if dialog.result == 'Yes':
             try :
                 self.butten_stop()
-            except AttributeError as err:
-                print('No Exsisting Connection, exiting')
-                pass
+            except Exception as err:
+                print('Err during Exsisting: ',err)
             self.root_window.destroy(); sys.exit()
         else: return None
 

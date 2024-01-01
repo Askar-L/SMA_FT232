@@ -26,7 +26,6 @@ from lib.GENERALFUNCTIONS import *
 
 # Test settings
 import pyftdimod.ftdi as ftdi
-from pyftdimod.usbtools import UsbToolsError
 
 #import pyftdi.ftdi as ftdi
 from multiprocessing import  Process
@@ -135,7 +134,7 @@ def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_
         actuator_device = PWMGENERATOR(i2c_device,debug=False) # Link PCA9685
     except UsbToolsError as err:
         print(err)
-        return []
+        return False
 
     # Set wire initial state
     actuator_device.setPWMFreq(wire_freq) 
