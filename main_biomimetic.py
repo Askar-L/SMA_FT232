@@ -74,16 +74,19 @@ class exprimentGUI(object):
         scale_height = 0.8
         frame_scale = ttk.Frame(frame_scale_butten)   
         frame_scale.place(relx=0,rely=0,relheight=scale_height,relwidth=1)
-
-
-        """ 日志框 """
-        margin_log_box = 0.0
+        
+        # Log Box
+        margin_log_box = 2*margin_scale_butten_W
+        log_label_frmae = ttk.Labelframe(Frame_log,text='Log',bootstyle="info",)
+        log_label_frmae.place(relx=margin_log_box,rely=0,
+                           relheight=1,relwidth=1-margin_log_box)
+      
         from ttkbootstrap.scrolled import ScrolledText,ScrolledFrame
-        self.scroller_log = ScrolledText(Frame_log,font=('Calibri Light',8),bootstyle='dark',vbar=True,
-                                         autohide=True) # width=49, height=17,     
-        self.scroller_log.place(relx=margin_log_box,rely=margin_log_box,
-                           relheight=1-2*margin_log_box,relwidth=1-2*margin_log_box)
-        # self.redirect_std()
+        self.scroller_log = ScrolledText(log_label_frmae, 
+                    font=('Calibri Light',8),bootstyle='dark',vbar=True,autohide=True) # width=49, height=17,     
+        self.scroller_log.place(relx=0,rely=0,relheight=1,relwidth=1)
+ 
+ 
         sys.stdout = self.ScollerLogger(self.scroller_log,Frame_log)
         sys.stderr = sys.stdout
 
@@ -107,7 +110,7 @@ class exprimentGUI(object):
             height_butten = 0.06
 
             _ch_main_frame = ttk.Frame(frame_scale,)
-            _ch_main_frame.place(relx = _i/(num_scale), rely = margin_scale_H,
+            _ch_main_frame.place(relx = _i/(num_scale), rely = 0,
                          relheight=1, relwidth = 1/(num_scale)-margin_scale_W)
 
             _ch_label_frmae = ttk.Labelframe(_ch_main_frame,text=' Ch '+str(_i)+' ',bootstyle="info",)
@@ -131,8 +134,6 @@ class exprimentGUI(object):
                             takefocus=1,bootstyle="SUCCESS",name = 'ch'+str(_i), from_= 1,
                             to=0,command=[],variable = self.output_levels[_i] ) )#self.callback_scorller
             scales[-1].place(relx = 0, rely = 0.1+2*height_butten, relheight=1-0.1-4*height_butten, relwidth = 1-margin_scale_W)
-
-            # 
         
         # Frame Butten
         butten_list = ['Connect','Stop ALL','APPLY','Exit']
@@ -143,9 +144,6 @@ class exprimentGUI(object):
         frame_button = ttk.Frame(frame_scale_butten) 
         frame_button.place( relx = 0, rely = scale_height+margin_scale_butten_W,
                     relheight = 1-scale_height-margin_scale_butten_W,relwidth=0.2*(num_butten))
-
-        
-
 
         for _i in range(num_butten):
             butten_connect = ttk.Button(frame_button, width=20,
@@ -253,15 +251,13 @@ if __name__ == '__main__':
     sys.stdout = Logger()
     sys.stderr = sys.stdout		# redirect std err, if necessary
 
-    
     # ctypes.windll.shcore.SetProcessDpiAwareness(1) #调用api设置成由应用程序缩放
     # ScaleFactor=ctypes.windll.shcore.GetScaleFactorForDevice(0) #调用api获得当前的缩放因子
     # root.tk.call('tk', 'scaling', ScaleFactor/100)    #设置缩放因子
 
 
-    root = ttk.Window(hdpi=True,scaling=3,themename='darkly')#tk.Tk()# style.master # tk.Tk()
-    # style = Style(theme='darkly') # darkly sandstone sandstone
-    # root = style.master
+    root = ttk.Window(hdpi=True,scaling=3,themename='sandstone')  # darkly sandstone sandstone
+
     root.title("Contorl SMA")  # 设置窗口标题
 
     # """ tk界面置顶 """

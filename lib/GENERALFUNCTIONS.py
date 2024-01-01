@@ -42,7 +42,7 @@ class Logger(object):
         self.log.write(message)
  
     def flush(self):
-        sys.stdout.flush()
+        self.terminal.flush()
     
     def _eg_codes():
         path = os.path.abspath(os.path.dirname(__file__))
