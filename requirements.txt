@@ -1,5 +1,7 @@
 Adafruit-Blinka # https://github.com/adafruit/Adafruit_Blinka
 
+pillow
+
 TKinter
 ttkbootstrap
 

@@ -31,55 +31,69 @@ class exprimentGUI(object):
         window_width = root.winfo_width()
 
         if width==[]:    
-            self.width = int(screen_width * 0.6)
-            self.height = int(screen_height * 0.6)
+            self.width = int(screen_width * 0.998)
+            self.height = int(screen_height * 0.92)
 
         self.root_window.geometry( str(self.width)+'x'+str(self.height) )  # 设置窗口大小 
 
         """ 点击右上角关闭窗体弹窗事件 """
-        self.root_window.protocol('WM_DELETE_WINDOW', self.exit_dialog)
+        self.root_window.protocol('WM_DELETE_WINDOW', self.exit)
         
         """ 组件容器创建 """
-        
         self.nav_bar_width = 0.04
         self.frame_nav_bar = ttk.Frame(self.root_window,bootstyle="primary") 
 
         self.frame_nav_bar.place(relx=0,rely=0,relheight=1,relwidth=self.nav_bar_width)
 
-        margin_page_H = 0.02
+        margin_page_H = 0.01
         self.frame_page = ttk.Frame(self.root_window,) 
         self.frame_page.place( relx = self.nav_bar_width ,rely = margin_page_H,
                               relheight = 1-2*margin_page_H, relwidth=1-self.nav_bar_width)
         # self.page_frame.place(x=self.nav_bar_weidth,rely=0,relheight=1,width=window_width-self.nav_bar_weidth)
-
         
-        # Multi-Processing
-        self.page_scale_contoller(container_window=self.frame_page)
+        # Non Multi-Processing
+        self.page_video_scale_contoller(container_window=self.frame_page)
 
         self.channels = PWMGENERATOR.CH_EVEN
 
+        self.fullScreenState = False
+        self.root_window.bind("<F11>", self.toggleFullScreen)
+        self.root_window.bind("<Escape>", self.exit)
+
+
+    def toggleFullScreen(self, event):
+        self.fullScreenState = not self.fullScreenState
+        self.root_window.attributes("-fullscreen", self.fullScreenState)
         
-    def page_scale_contoller(self,container_window):
+    def page_video_scale_contoller(self,container_window):
         
-        log_frame_width = 0.4
-        Frame_log = ttk.Frame(container_window)   
-        Frame_log.place(relx=0,rely=0,relheight=1,relwidth=log_frame_width)
+        log_video_frame_width = 0.5
+        Frame_video_log = ttk.Frame(container_window)   
+        Frame_video_log.place(relx=0,rely=0,relheight=1,relwidth=log_video_frame_width)
 
         frame_scale_butten = ttk.Frame(container_window)   
-        margin_scale_butten_W = 0.01
-        frame_scale_butten.place(relx = log_frame_width+margin_scale_butten_W,
-                                 rely=0,relheight=1,relwidth = 1-log_frame_width-margin_scale_butten_W )
+        margin_scale_butten_W = 0.006
+        frame_scale_butten.place(relx = log_video_frame_width+margin_scale_butten_W,
+                                 rely=0,relheight=1,relwidth = 1-log_video_frame_width-margin_scale_butten_W )
 
         # Frame scale
-        scale_height = 0.8
+        height_scale_box = 0.8
         frame_scale = ttk.Frame(frame_scale_butten)   
-        frame_scale.place(relx=0,rely=0,relheight=scale_height,relwidth=1)
+        frame_scale.place(relx=0,rely=0,relheight=height_scale_box,relwidth=1)
         
+
+        # Video Box
+        height_video_box = 0.6
+
+        margin_video_log_box = margin_scale_butten_W
+        log_video_frmae = ttk.Labelframe(Frame_video_log,text='Video',bootstyle="info",)
+        log_video_frmae.place(relx=margin_video_log_box,rely=0,
+                           relheight=height_video_box,relwidth=1-margin_video_log_box)
+
         # Log Box
-        margin_log_box = 2*margin_scale_butten_W
-        log_label_frmae = ttk.Labelframe(Frame_log,text='Log',bootstyle="info",)
-        log_label_frmae.place(relx=margin_log_box,rely=0,
-                           relheight=1,relwidth=1-margin_log_box)
+        log_label_frmae = ttk.Labelframe(Frame_video_log,text='Log',bootstyle="info",)
+        log_label_frmae.place(relx=margin_video_log_box,rely= height_video_box,
+                           relheight=1-height_video_box,relwidth=1-margin_video_log_box)
       
         from ttkbootstrap.scrolled import ScrolledText,ScrolledFrame
         self.scroller_log = ScrolledText(log_label_frmae, 
@@ -87,7 +101,7 @@ class exprimentGUI(object):
         self.scroller_log.place(relx=0,rely=0,relheight=1,relwidth=1)
  
  
-        sys.stdout = self.ScollerLogger(self.scroller_log,Frame_log)
+        sys.stdout = self.ScollerLogger(self.scroller_log,Frame_video_log)
         sys.stderr = sys.stdout
 
         # Scales
@@ -105,16 +119,17 @@ class exprimentGUI(object):
         
         # scales_colors = ["#%02x%02x%02x"%(25,255-int((_+1)*255/(num_scale+10)),255) for _ in range(num_scale)]  
         # self.run_log_print(str(scales_colors))
-
+        height_ch_butten = 0.1
+        height_ch_label_frame = 0.11
         for _i in range(num_scale):
-            height_butten = 0.06
 
             _ch_main_frame = ttk.Frame(frame_scale,)
             _ch_main_frame.place(relx = _i/(num_scale), rely = 0,
                          relheight=1, relwidth = 1/(num_scale)-margin_scale_W)
 
-            _ch_label_frmae = ttk.Labelframe(_ch_main_frame,text=' Ch '+str(_i)+' ',bootstyle="info",)
-            _ch_label_frmae.place(relx = 0, rely = 0, relheight=0.11, relwidth = 1-margin_scale_W)
+            _ch_label_text = ('Ch ' if _i==0 else '' )+str(_i)+''
+            _ch_label_frmae = ttk.Labelframe(_ch_main_frame,text=_ch_label_text,bootstyle="info",)
+            _ch_label_frmae.place(relx = 0, rely = 0, relheight= height_ch_label_frame, relwidth = 1-margin_scale_W)
             
             _ch_label = ttk.Entry(_ch_label_frmae, textvariable = self.output_levels[_i] )
             _ch_label.place(relx=0,rely=0,relheight=1,relwidth=1)   
@@ -123,34 +138,41 @@ class exprimentGUI(object):
             _ch_butten_max = ttk.Button(_ch_main_frame,text='MAX',bootstyle="success-outline",
                                         command = lambda arg=_i : self.output_levels[arg].set(1))
             
-            _ch_butten_max.place(relx=0,rely=0.1+margin_scale_H,relheight=height_butten,relwidth=1)
+            _ch_butten_max.place(relx=0,rely=0.1+margin_scale_H,relheight=height_ch_butten,relwidth=1)
 
 
             _ch_butten_min = ttk.Button(_ch_main_frame,text='MIN',bootstyle="success-outline",
                                         command = lambda arg=_i : self.output_levels[arg].set(0))
-            _ch_butten_min.place(relx=0,rely=1-height_butten-margin_scale_H,relheight=height_butten,relwidth=1)
+            _ch_butten_min.place(relx=0,rely=1-height_ch_butten-margin_scale_H,
+                                 relheight=height_ch_butten,relwidth=1)
 
-            scales.append( ttk.Scale(_ch_main_frame,length=200,value=0,orient=ttk.VERTICAL,
+            scales.append( ttk.Scale(_ch_main_frame, value=0, orient=ttk.VERTICAL,
                             takefocus=1,bootstyle="SUCCESS",name = 'ch'+str(_i), from_= 1,
-                            to=0,command=[],variable = self.output_levels[_i] ) )#self.callback_scorller
-            scales[-1].place(relx = 0, rely = 0.1+2*height_butten, relheight=1-0.1-4*height_butten, relwidth = 1-margin_scale_W)
+                            to=0,variable = self.output_levels[_i]) )#self.callback_scorller
+            
+            scales[-1].place(relx = 0, rely = height_ch_label_frame +height_ch_butten +2*margin_scale_H,
+                              relheight = 1 - height_ch_label_frame -2*height_ch_butten -4*margin_scale_H, 
+                              relwidth = 1)
         
-        # Frame Butten
-        butten_list = ['Connect','Stop ALL','APPLY','Exit']
-        butten_style_list = ['primary','danger','warning','scondary']
-        butten_func_list = [self.butten_connect,self.butten_stop,self.butten_apply,self.exit_dialog]
+        # Frame System Buttens
+        butten_list = ['','Connect\n\nPCA-9685','STOP \n\nAll channel','APPLY\n\nDuty Ratio','EXIT']
+        butten_style_list = ['scondary','info','danger','warning','scondary']
+        butten_style_list = [_ + 'outline' for _ in butten_style_list]
+        butten_func_list = [[],self.butten_connect,self.butten_stop,self.butten_apply,self.exit]
 
         num_butten = len(butten_list)
         frame_button = ttk.Frame(frame_scale_butten) 
-        frame_button.place( relx = 0, rely = scale_height+margin_scale_butten_W,
-                    relheight = 1-scale_height-margin_scale_butten_W,relwidth=0.2*(num_butten))
+        frame_button.place( relx = 0, rely = height_scale_box+margin_scale_butten_W,
+                    relheight = 1-height_scale_box-margin_scale_butten_W,relwidth=1)
 
         for _i in range(num_butten):
             butten_connect = ttk.Button(frame_button, width=20,
                     text= butten_list[_i],style=butten_style_list[_i], command = butten_func_list[_i])
-            butten_connect.place(relx = _i/num_butten,rely=0,relheight=1,relwidth = 1/num_butten)
-        
-        pass
+            butten_connect.place(relx = _i/num_butten,rely=0,
+                                 relheight=1,relwidth = 1/num_butten-margin_scale_butten_W)
+         
+        self.butten_connect()
+        return []
 
     def thread_it(self, func, *args):
         """ 将函数打包进线程 """
@@ -196,7 +218,8 @@ class exprimentGUI(object):
                 print('Applying channel output (%): ')
                 print(' '.join(str(int(100*_.get()))+'  ' for _ in self.output_levels))
         except AttributeError:
-            print('No connection, please check connection!')
+            print('No connection, Auto connecting!')
+            self.butten_connect()
     
     class ScollerLogger(object):
         def __init__(self, scroller=[],master=[]):
@@ -229,21 +252,20 @@ class exprimentGUI(object):
         print( ' '.join(str(_.get())+'  ' for _ in self.output_levels))
         pass   
 
-    def exit_dialog(self): 
-        
+    def exit(self,*args): 
         from ttkbootstrap.dialogs import MessageDialog
 
         dialog = MessageDialog(title='EXIT',
-            message="Close all outputs and Exit ?", parent=self.root_window, buttons=["No", "Yes:primary"],
+            message="Close all outputs and Exit ?", parent=self.root_window,
+            buttons=["No", "Yes:primary"],
             alert=True, localize=False)
         position = [int(root.winfo_screenwidth()/3),int(root.winfo_screenheight()/3) ] 
+
         dialog.show(position)
 
         if dialog.result == 'Yes':
-            try :
-                self.butten_stop()
-            except Exception as err:
-                print('Err during Exsisting: ',err)
+            try : self.butten_stop()
+            except Exception as err: print('Err during Exsisting: ',err)
             self.root_window.destroy(); sys.exit()
         else: return None
 
@@ -256,10 +278,10 @@ if __name__ == '__main__':
     # root.tk.call('tk', 'scaling', ScaleFactor/100)    #设置缩放因子
 
 
-    root = ttk.Window(hdpi=True,scaling=3,themename='sandstone')  # darkly sandstone sandstone
+    root = ttk.Window(hdpi=True,scaling=3,themename='darkly')  # darkly sandstone sandstone
 
     root.title("Contorl SMA")  # 设置窗口标题
-
+    root.geometry('+0+0')
     # """ tk界面置顶 """
     # root.attributes("-topmost", 1)
 

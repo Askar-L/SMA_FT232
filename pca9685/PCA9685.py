@@ -104,10 +104,10 @@ class Pca9685_01(object):
     return []
 
   def restart(self):
-    print('\n Restart PCA9685 board:0x%02X\n\tThe PWM in regs will be runned from the start'%self.address)
+    print('\n Restart PCA9685 board:0x%02X\n  The PWM in regs will be runned from the start'%self.address)
     # 1. Read MODE1 register.
     mode1_data = self.read(self.__MODE1)      
-    print("\t0x%02X.Mode1_data:0x%02X"%(self.address,mode1_data))
+    print("  0x%02X.Mode1_data:0x%02X"%(self.address,mode1_data))
 
     # 2. Check that bit 7 (RESTART) is a logic 1. If it is, clear bit 4 (SLEEP). 
         # Allow time for oscillator to stabilize (500 us).
@@ -120,7 +120,7 @@ class Pca9685_01(object):
 
     time.sleep(1)
     mode1_data = self.read(self.__MODE1)   
-    print('\tMODE1 after reset: ',bin(mode1_data))
+    print('  MODE1 after reset: ',bin(mode1_data))
     # exit()
 
     pass
@@ -151,7 +151,7 @@ class Pca9685_01(object):
   def testChannle(self,channel_num):
 
     if (channel_num<0) or channel_num >15: 
-      print("\nIllegal PWM channel: ",channel_num,"\n\tChannel number should in range: [0,15]")
+      print("\nIllegal PWM channel: ",channel_num,"\n  Channel number should in range: [0,15]")
       return False
     else:  
       port = self.__LED0_ON_L + (channel_num)*4
@@ -186,12 +186,12 @@ class Pca9685_01(object):
       value_after =  self.slave.read_from(regaddr=reg_add, readlen=1)[0]# self.read(reg_add)
       if (value_after-value_before) == 0:
         if input_value == value_after: 
-          if self.debug: print("\tInputted and saved values are equal, however it is still writted!")
+          if self.debug: print("  Inputted and saved values are equal, however it is still writted!")
         else: 
-          print("\tValue is changed, however does not mattches the desire value!")
-          print("\tConsider chaecking the chip datasheet about the correct value for changing")
+          print("  Value is changed, however does not mattches the desire value!")
+          print("  Consider chaecking the chip datasheet about the correct value for changing")
           
-      # if self.debug: print("\tI2C: Device 0x%02X writted 0x%02X to reg 0x%02X" % (self.address, input_value, reg_add))
+      # if self.debug: print("  I2C: Device 0x%02X writted 0x%02X to reg 0x%02X" % (self.address, input_value, reg_add))
       return value_after
     return in_value
     
@@ -200,7 +200,7 @@ class Pca9685_01(object):
     # result = self.slave.read_byte_data(self.address, reg)
     result = (self.slave.read_from(regaddr = reg,readlen=1))[0]
     # result
-    if self.debug: print("\tI2C: Device 0x%02X returned 0x%02X from reg 0x%02X" % (self.address, result & 0xFF, reg))
+    if self.debug: print("  I2C: Device 0x%02X returned 0x%02X from reg 0x%02X" % (self.address, result & 0xFF, reg))
     return result
 
   def setPWMFreq(self, freq):
@@ -218,12 +218,12 @@ class Pca9685_01(object):
 
     oldmode = self.read(self.__MODE1)
     newmode = (oldmode & 0x7F) | 0x10        # sleep
-    # print("\tOld mode:0x%02X"%oldmode, " Mode to write:0x%02X"%newmode)
+    # print("  Old mode:0x%02X"%oldmode, " Mode to write:0x%02X"%newmode)
 
     self.slave.write_to( regaddr=self.__MODE1, out=bytearray([newmode])) # go to sleep
-    print("\tWritting value: ",prescale,", to prescale reg ",hex(self.__PRESCALE))
+    print("  Writting value: ",prescale,", to prescale reg ",hex(self.__PRESCALE))
     self.slave.write_to( regaddr=self.__PRESCALE, out=bytearray([prescale]) ) # Value
-    print("\tBack to awake mode")
+    print("  Back to awake mode")
     self.slave.write_to( regaddr=self.__MODE1, out=bytearray([oldmode])) # Restart sign
     
   def setOCH(self): # updated @20231229
@@ -237,9 +237,9 @@ class Pca9685_01(object):
     oldmode2 = self.read(self.__MODE2)
     newmode2 = (oldmode2 | 0x08) # OCH ON/OFF
 
-    # print("\tWritting value: ",prescale,", to prescale reg ",hex(self.__PRESCALE))
+    # print("  Writting value: ",prescale,", to prescale reg ",hex(self.__PRESCALE))
     self.slave.write_to( regaddr=self.__MODE2, out=bytearray([newmode2]) ) # Value
-    # print("\tBack to awake mode")
+    # print("  Back to awake mode")
 
     self.slave.write_to( regaddr=self.__MODE1, out=bytearray([oldmode1])) # Restart sign
     if self.debug:
@@ -251,7 +251,7 @@ class Pca9685_01(object):
       self.OCH_mode = True
       return True 
     else:
-      print('\n\nFAILED: OCH mode open failed!\n\tOCH mode: Output change on ACK')
+      print('\n\nFAILED: OCH mode open failed!\n  OCH mode: Output change on ACK')
       return False
 
   def setAI(self,is_on):
@@ -277,7 +277,7 @@ class Pca9685_01(object):
       if self.debug: print('_newmode1: ',bin(_newmode1),' now: ',bin(self.read(self.__MODE1)),'self.AI',self.AI)
 
       if not self.AI ==  is_on:
-        print('\n\nFAILED: Failed on setting AI mode:\n\tself.AI old:'
+        print('\n\nFAILED: Failed on setting AI mode:\n  self.AI old:'
               ,bin(_oldmode1),' Cuurent',bin(self.AI))
         exit()
       else: return self.AI
@@ -298,7 +298,7 @@ class Pca9685_01(object):
     self.write(self.__LED0_OFF_L+4*channel, off & 0xFF)
     self.write(self.__LED0_OFF_H+4*channel, off >> 8)
     
-    if (self.debug):      print("\tChannel: %d  LED_ON: %d LED_OFF: %d" % (channel,on,off))
+    if (self.debug):      print("  Channel: %d  LED_ON: %d LED_OFF: %d" % (channel,on,off))
 
   def setOnTime(self,channel=[_i-1 for _i in range(16)]):
     # NOT ready
@@ -313,9 +313,9 @@ class Pca9685_01(object):
     # if not self.easy_mdoe:
     #   print("Pls use easy mode to Duty Ratio!"); return []
     # if (channel<0) or channel >15: 
-    #   print("\nIllegal PWM channel: ",channel,"\n\tShould in range: [0,15]"); return []
+    #   print("\nIllegal PWM channel: ",channel,"\n  Should in range: [0,15]"); return []
     # elif duty_ratio<0 or duty_ratio>1:
-    #   print("\n\n\t\t Illegeal DUTY RATIO!! \nPlease set duty ratio to 0-1"); return []
+    #   print("\n\n     Illegeal DUTY RATIO!! \nPlease set duty ratio to 0-1"); return []
 
     
     port = self.__LED0_ON_L + (channel)*4
@@ -373,7 +373,7 @@ class Pca9685_01(object):
     # [active_duty,sustain_duty,stop_duty] = dutys
     # [burst_interval,sustain_interval,stop_interval] = intervals
     # if not len(dutys)==len(intervals): 
-    #   print("\n\nError!\tin test_wires\t"); return []
+    #   print("\n\nError!  in test_wires  "); return []
 
     # if conf0 and not channels[-1]==0 : channels.append(0)
 

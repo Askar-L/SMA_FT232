@@ -19,8 +19,8 @@ from pyftdimod.usbtools import UsbToolsError
 
 
 RUNTIME = time.time()
-FIG_FOLDER = "./REC/"
-DATA_FOLDER = "./REC/"
+FIG_FOLDER = "./LOG/"
+DATA_FOLDER = "./LOG/"
 CAL_FOLDER = "./CAL/"
 FIG_SIZE = (38.4,21.6)#(21.6,14.4)#(19.2,10.8)
 FONTSIZE = 40
