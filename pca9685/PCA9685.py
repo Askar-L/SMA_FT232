@@ -65,6 +65,7 @@ class Pca9685_01(object):
 
   def reset(self): #BUG
     i2c_controller = self.i2c_controller
+    
     #     The SWRST Call function is defined as the following:
     # 1. A START command is sent by the I2C-bus master.
     i2c_controller._do_prolog( (self.address << 1) & i2c_controller.HIGH )

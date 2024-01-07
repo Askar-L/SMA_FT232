@@ -27,7 +27,8 @@ class exprimentGUI():
     def __init__(self, root,process_share_dict={}, width=[], height=[]):
         super().__init__()
         self.root_window = root
-        
+        self.actuator_device = []
+
         screen_width = root.winfo_screenwidth()
         screen_height = root.winfo_screenheight()
         window_width = root.winfo_width()
@@ -222,9 +223,8 @@ class exprimentGUI():
         
         RUNTIME = time.perf_counter()
 
-        # if self.actuator_device:
-        #     self.actuator_device.des
-        #     pass
+        if self.actuator_device:
+            self.actuator_device.i2c_controller.close()
 
         url_test_len = 4
         # url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0')
