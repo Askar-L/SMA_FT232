@@ -6,33 +6,36 @@
 
 # Based on https://cloud.tencent.com/developer/article/2192324
 
-import sys,ctypes
-import time
+import sys,time,cv2
+from PIL import Image, ImageTk 
 
-# import tkinter as tk
+import tkinter as tk
 from tkinter.messagebox import askyesno
 from tkinter.scrolledtext import ScrolledText
 import threading,multiprocessing
 
+# from tkinter import tk
 import ttkbootstrap as ttk
 
 from lib.GENERALFUNCTIONS import *
 from SMA_finger.SMA_finger_MP import *
 
+# from lib.GUI_Image_Editor.ViewGUI import ViewGUI
 
+class exprimentGUI():
 
-class exprimentGUI(object):
-
-    def __init__(self, root_window,process_manager, width=[], height=[]):
-        self.root_window = root_window
+    def __init__(self, root,process_share_dict={}, width=[], height=[]):
+        super().__init__()
+        self.root_window = root
         
         screen_width = root.winfo_screenwidth()
         screen_height = root.winfo_screenheight()
         window_width = root.winfo_width()
+        self.process_share_dict = process_share_dict
 
         if width==[]:    
-            self.width = int(screen_width * 0.998)
-            self.height = int(screen_height * 0.92)
+            self.width = int(screen_width * 0.992)
+            self.height = int(screen_height * 0.928)
 
         self.root_window.geometry( str(self.width)+'x'+str(self.height) )  # 设置窗口大小 
 
@@ -51,8 +54,9 @@ class exprimentGUI(object):
                               relheight = 1-2*margin_page_H, relwidth=1-self.nav_bar_width)
         # self.page_frame.place(x=self.nav_bar_weidth,rely=0,relheight=1,width=window_width-self.nav_bar_weidth)
         
-        # Non Multi-Processing
-        self.page_video_scale_contoller(container_window=self.frame_page)
+        cd_video = 'C:\\Users\\51165\\OneDrive\\Pictures\\Camera Roll\\'
+        # ViewGUI(self.root_window,cd_video) #
+        self.page_video_scale_contoller(self.frame_page,cd_video)
 
         self.channels = PWMGENERATOR.CH_EVEN
 
@@ -64,8 +68,8 @@ class exprimentGUI(object):
     def toggleFullScreen(self, event):
         self.fullScreenState = not self.fullScreenState
         self.root_window.attributes("-fullscreen", self.fullScreenState)
-        
-    def page_video_scale_contoller(self,container_window):
+    
+    def page_video_scale_contoller(self,container_window,cd_video):
         
         log_video_frame_width = 0.5
         Frame_video_log = ttk.Frame(container_window)   
@@ -83,13 +87,27 @@ class exprimentGUI(object):
         
 
         # Video Box
-        height_video_box = 0.6
-
         margin_video_log_box = margin_scale_butten_W
-        log_video_frmae = ttk.Labelframe(Frame_video_log,text='Video',bootstyle="info",)
-        log_video_frmae.place(relx=margin_video_log_box,rely=0,
-                           relheight=height_video_box,relwidth=1-margin_video_log_box)
 
+        width_video_box = 1 -margin_video_log_box
+        height_video_box =   0.5625 * width_video_box
+
+        log_video_frame = ttk.Labelframe(Frame_video_log,text='Video',bootstyle="info",)
+        log_video_frame.place(relx=margin_video_log_box,rely=0,
+                           relheight=height_video_box,relwidth= width_video_box )
+        
+
+        # image = self.process_share_dict['photo']
+        image = cv2.imread(IMG_FOLDER+'1.jpg')
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = Image.fromarray(image)
+        photo = ImageTk.PhotoImage(image)  
+        self.video_label_0 = tk.Label(log_video_frame)
+        self.video_label_0.place(relheight=1,relwidth=1)#.pack(expand = "yes")# 
+        
+        self.video_label_0.configure(image=photo)
+        self.video_label_0.image = photo     
+        
         # Log Box
         log_label_frmae = ttk.Labelframe(Frame_video_log,text='Log',bootstyle="info",)
         log_label_frmae.place(relx=margin_video_log_box,rely= height_video_box,
@@ -171,19 +189,42 @@ class exprimentGUI(object):
             butten_connect.place(relx = _i/num_butten,rely=0,
                                  relheight=1,relwidth = 1/num_butten-margin_scale_butten_W)
          
-        self.butten_connect()
-        return []
+        self.butten_connect() 
+        # self.thread_it(self.refresh_img)
+
+    def refresh_img(self):
+        # t_old = self.timestamp_recived_img
+        # t_new = process_share_dict['t_ready']
+        # if not (t_new - t_old) == 0:
+        #     self.root_window.after(500,self.refresh_img)
+        #     return []
+        # else: 
+        #     self.timestamp_recived_img = t_new
+        try:
+            image = self.process_share_dict['photo']
+            photo = ImageTk.PhotoImage(image)  
+            self.video_label_0.configure(image=photo)
+            self.video_label_0.image = photo    
+            self.root_window.after(5,self.refresh_img)
+        except  Exception as err:
+            print('Video frame load from thread manager failed:\n ')
+            print('Tring again ... ...')
+            self.root_window.after(1000,self.refresh_img)
 
     def thread_it(self, func, *args):
         """ 将函数打包进线程 """
         self.myThread = threading.Thread(target=func, args=args)
-        self.myThread .setDaemon(True)  # 主线程退出就直接让子线程跟随退出,不论是否运行完成。
+        self.myThread.daemon = True
         self.myThread .start()
 
     def butten_connect(self): 
         print('\nConnecting the PCA9685')  
         
         RUNTIME = time.perf_counter()
+
+        # if self.actuator_device:
+        #     self.actuator_device.des
+        #     pass
 
         url_test_len = 4
         # url_0 = os.environ.get('FTDI_DEVICE', 'ftdi://ftdi:232h:0:FF/0')
@@ -256,12 +297,15 @@ class exprimentGUI(object):
         from ttkbootstrap.dialogs import MessageDialog
 
         dialog = MessageDialog(title='EXIT',
-            message="Close all outputs and Exit ?", parent=self.root_window,
+            message="Close all outputs and Exit ?", parent=self.root_window,font=('Calibri',16),
+            # width= int(self.root_window.winfo_screenwidth()/3),
+            padding= [200,200],
             buttons=["No", "Yes:primary"],
             alert=True, localize=False)
-        position = [int(root.winfo_screenwidth()/3),int(root.winfo_screenheight()/3) ] 
+        position = [int(self.root_window.winfo_screenwidth()/3),int(self.root_window.winfo_screenheight()/3) ] 
 
         dialog.show(position)
+        # dialog
 
         if dialog.result == 'Yes':
             try : self.butten_stop()
@@ -269,27 +313,80 @@ class exprimentGUI(object):
             self.root_window.destroy(); sys.exit()
         else: return None
 
+
+
+def process_GUI(pid,process_share_dict={}):
+    root = ttk.Window(hdpi=True,scaling=3,themename='darkly')  # darkly sandstone sandstone
+    # process_share_dict['root'] = root
+
+    root.title("Contorl SMA")  # 设置窗口标题
+    root.geometry('+0+0')
+    exprimentGUI(root,process_share_dict)
+    root.mainloop()
+
+    pass
+
+# Static
+def process_camera(pid,process_share_dict={}):
+    # process_share_dict['ready'] = False
+    # Define a video capture object 
+    cap = cv2.VideoCapture(2,cv2.CAP_DSHOW) # Important!
+    cam_flag = cap.isOpened()
+    print(cap.isOpened(),cap.get(3),cap.get(4))
+    
+    # Declare the width and height in variables 
+    width, height = 1280, 720
+    
+    # Set the width and height 
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, width) 
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height) 
+    # root = process_share_dict['root']
+
+    while cam_flag:
+        ret, frame = cap.read()
+        if ret:
+            # Convert the frame to PIL format
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image = Image.fromarray(image)
+            # # Resize the image to fit the label
+            image = image.resize((1280,720)) #640, 360
+            # Update the label with the new image
+
+            # Convert the image to Tkinter format
+            # photo = ImageTk.PhotoImage(image)      
+
+            process_share_dict['photo'] = image
+            # process_share_dict['t_ready'] = time.time()
+            # root.video_label_0.configure(image=photo)
+            # root.video_label_0.image = photo
+            # print("Providing image")
+            # time.sleep(0.5)
+        pass
+    pass
+
 if __name__ == '__main__':
-    sys.stdout = Logger()
-    sys.stderr = sys.stdout		# redirect std err, if necessary
+    # sys.stdout = Logger()
+    # sys.stderr = sys.stdout		# redirect std err, if necessary
 
     # ctypes.windll.shcore.SetProcessDpiAwareness(1) #调用api设置成由应用程序缩放
     # ScaleFactor=ctypes.windll.shcore.GetScaleFactorForDevice(0) #调用api获得当前的缩放因子
     # root.tk.call('tk', 'scaling', ScaleFactor/100)    #设置缩放因子
-
-
-    root = ttk.Window(hdpi=True,scaling=3,themename='darkly')  # darkly sandstone sandstone
-
-    root.title("Contorl SMA")  # 设置窗口标题
-    root.geometry('+0+0')
+ 
     # """ tk界面置顶 """
     # root.attributes("-topmost", 1)
+    with multiprocessing.Manager() as process_manager:
+        process_share_dict = process_manager.dict()
+        process_share_dict['photo']=[]
 
-    """ 创建Gui类对象 """
-    test_gui = exprimentGUI(root,process_manager=multiprocessing.Manager())
-    
-    """ 初始化GUi组件 """
-    root.mainloop()
+        process_root = multiprocessing.Process(
+             target= process_GUI,name='GUI', args=(1,process_share_dict) )
+        process_cam = multiprocessing.Process( 
+            target= process_camera, name='CAM', args=(2,process_share_dict))
+        
+        process_cam.start()
+        time.sleep(3)
+        process_root.start()
+        process_root.join()
 
 
      

@@ -4,6 +4,7 @@ pillow
 
 TKinter
 ttkbootstrap
+opencv-python
 
 # pyftdi # a modified pyftdi is contained
 

@@ -19,6 +19,7 @@ from pyftdimod.usbtools import UsbToolsError
 
 
 RUNTIME = time.time()
+IMG_FOLDER = "./img/"
 FIG_FOLDER = "./LOG/"
 DATA_FOLDER = "./LOG/"
 CAL_FOLDER = "./CAL/"
