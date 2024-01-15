@@ -146,7 +146,7 @@ class exprimentGUI():
             _ch_main_frame.place(relx = _i/(num_scale), rely = 0,
                          relheight=1, relwidth = 1/(num_scale)-margin_scale_W)
 
-            _ch_label_text = ('Ch ' if _i==0 else '' )+str(_i)+''
+            _ch_label_text = ('Ch ' if _i==0 else '' )+str(_i*2)+''
             _ch_label_frmae = ttk.Labelframe(_ch_main_frame,text=_ch_label_text,bootstyle="info",)
             _ch_label_frmae.place(relx = 0, rely = 0, relheight= height_ch_label_frame, relwidth = 1-margin_scale_W)
             

@@ -129,7 +129,7 @@ def ctrlProcess(i2c_actuator_controller_URL=[],angle_sensor_ID="SNS000",process_
     # elif actuator_device==[]: 
     try:
         i2c_device = i2c.I2cController()
-        i2c_device.configure(i2c_actuator_controller_URL,frequency = 3E6,
+        i2c_device.configure(i2c_actuator_controller_URL,frequency = 1E6,#3E6,
                             rdoptim=True,clockstretching=True) # On IIC      
         actuator_device = PWMGENERATOR(i2c_device,debug=False) # Link PCA9685
     except UsbToolsError as err:
