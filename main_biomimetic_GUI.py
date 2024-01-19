@@ -100,9 +100,10 @@ class exprimentGUI():
 
         # image = self.process_share_dict['photo']
         image = cv2.imread(IMG_FOLDER+'1.jpg')
-        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)
         photo = ImageTk.PhotoImage(image)  
+
         self.video_label_0 = tk.Label(log_video_frame)
         self.video_label_0.place(relheight=1,relwidth=1)#.pack(expand = "yes")# 
         
@@ -191,7 +192,7 @@ class exprimentGUI():
                                  relheight=1,relwidth = 1/num_butten-margin_scale_butten_W)
          
         self.butten_connect() 
-        # self.thread_it(self.refresh_img)
+        self.make_thread(self.refresh_img)
 
     def refresh_img(self):
         # t_old = self.timestamp_recived_img
@@ -212,11 +213,10 @@ class exprimentGUI():
             print('Tring again ... ...')
             self.root_window.after(1000,self.refresh_img)
 
-    def thread_it(self, func, *args):
-        """ 将函数打包进线程 """
-        self.myThread = threading.Thread(target=func, args=args)
-        self.myThread.daemon = True
-        self.myThread .start()
+    def make_thread(self, func, *args):
+        self.newThread = threading.Thread(target=func, args=args)
+        self.newThread.daemon = True
+        self.newThread.start()
 
     def butten_connect(self): 
         print('\nConnecting the PCA9685')  
@@ -330,7 +330,8 @@ def process_GUI(pid,process_share_dict={}):
 def process_camera(pid,process_share_dict={}):
     # process_share_dict['ready'] = False
     # Define a video capture object 
-    cap = cv2.VideoCapture(2,cv2.CAP_DSHOW) # Important!
+    cam_num =  0
+    cap = cv2.VideoCapture(cam_num,cv2.CAP_DSHOW) # Important!
     cam_flag = cap.isOpened()
     print(cap.isOpened(),cap.get(3),cap.get(4))
     
