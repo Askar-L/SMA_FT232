@@ -240,12 +240,12 @@ class exprimentGUI():
                 self.actuator_device = actuator_device
                 break
 
-    def butten_stop(self): 
+    def butten_stop(self,retry=True): 
         print('Stopping all channel output')
         for ch in self.output_levels: ch.set(0)
-        self.butten_apply(disp=False)
+        self.butten_apply(disp=False,retry=False)
 
-    def butten_apply(self,disp=True):
+    def butten_apply(self,disp=True,retry = True):
         for ch_DR in self.output_levels:
             val = ch_DR.get()
             # print(val)
@@ -259,8 +259,8 @@ class exprimentGUI():
                 print('Applying channel output (%): ')
                 print(' '.join(str(int(100*_.get()))+'  ' for _ in self.output_levels))
         except AttributeError:
-            print('No connection, Auto connecting!')
-            self.butten_connect()
+            print('No connection!')
+            if retry: print('Auto connecting!'); self.butten_connect()
     
     class ScollerLogger(object):
         def __init__(self, scroller=[],master=[]):
@@ -308,7 +308,7 @@ class exprimentGUI():
         # dialog
 
         if dialog.result == 'Yes':
-            try : self.butten_stop()
+            try : self.butten_stop(retry=False)
             except Exception as err: print('Err during Exsisting: ',err)
             self.root_window.destroy(); sys.exit()
         else: return None
