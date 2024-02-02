@@ -179,7 +179,8 @@ class TiAds1115_01(object): # TODO
     _res.append( _reading )
 
     return _res
- 
+  
+  # read sensor data
   def read(self, reg): 
     "Read an unsigned byte from the I2C device"
     # result = self.slave.read_byte_data(self.address, reg)
@@ -187,7 +188,8 @@ class TiAds1115_01(object): # TODO
     # result
     if self.debug: print("\tI2C: Device 0x%02X returned 0x%02X from reg 0x%02X" % (self.address, result & 0xFF, reg))
     return result
- 
+   
+  # write reg
   def write(self, reg_add, input_value, doCheck = True):
     "Writes an 8-bit value to the specified register/address"
     
@@ -214,7 +216,6 @@ class TiAds1115_01(object): # TODO
   
   
   # NOT READY AREA!!!
-
   def reset(self): #BUG
     """
       The ADS111x reset on power-up and set all the bits in the Config register to the respective default settings. 
@@ -269,7 +270,6 @@ class HW526Angle(TiAds1115_01):
     pass
   
   def loadCalibration(self,url=[]):
-    
     if not url:
       url = self.calib_file_url
     print("Loading calibration data from:",url)
@@ -288,7 +288,7 @@ class HW526Angle(TiAds1115_01):
       print("\tErr occurs when loading calibration json file, Please calibrate angle sensor: ",self.name)
       self.calibrateRange()
  
-
+  # calibrate range and save to json
   def calibrateRange(self,angles=[90,270],t_delay=2):
     print("Calibration starts, ",len(angles)," angles reqiured")
     if len(angles) < 2 : print("Location number: ",len(angles)," is not enough for calibration"); return []
@@ -302,7 +302,7 @@ class HW526Angle(TiAds1115_01):
       raw_R.append(_reading) 
       print("\t",_reading)
 
-    # Cal calibration ?
+    # Cal calibration
     if len(angles) == 2:
       raw_R = numpy.array(raw_R)
       angles = numpy.array(angles)

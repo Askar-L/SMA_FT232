@@ -50,6 +50,7 @@ class Logger(object):
         type = sys.getfilesystemencoding()
         sys.stdout = Logger()
 
+# Save expriment/sensor massive data 
 def saveData(data,file_name,labels,f_type:str="csv",**kwargs: Mapping[str, Any]):
  
     # file_name = time.strftime("_%b%d_%H.%M",runtime)+str(dutys)+str(intervals)
@@ -75,7 +76,7 @@ def saveFigure(data,file_name,labels,show_img=False, figure_mode='Double' ,**kwa
     
     # if data_size[1]<2: ValueError
 
-    plt.rcParams.update({'font.size': FONTSIZE}) # 改变所有字体大小，改变其他性质类似
+    plt.rcParams.update({'font.size': FONTSIZE}) # 改变所有字体大小
 
     plt.figure(figsize=figsize,dpi=100)
     plt.clf()
