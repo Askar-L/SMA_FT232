@@ -6,7 +6,10 @@
 
 # Based on https://cloud.tencent.com/developer/article/2192324
 
-import sys,time,cv2
+import sys
+print(sys.version)
+
+import time,cv2
 from PIL import Image, ImageTk 
 
 import tkinter as tk
@@ -336,11 +339,17 @@ def process_camera(pid,process_share_dict={}):
     print('Camera State:',cap.isOpened(),cap.get(3),cap.get(4))
     
     # Declare the width and height in variables 
-    width, height = 1280, 720
+    width, height = 1280, 720 # 1920,1080# 
+    
+    # Set FPS
+    cap.set(cv2.CAP_PROP_FPS,60)
     
     # Set the width and height 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width) 
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height) 
+
+    # Set encoder
+    cap.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter_fourcc('M','J','P','G')) # VIDEOWRITER_FOURCC VideoWriter_fourcc
     # root = process_share_dict['root']
 
     while cam_flag:
@@ -350,7 +359,7 @@ def process_camera(pid,process_share_dict={}):
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             image = Image.fromarray(image)
             # # Resize the image to fit the label
-            image = image.resize((1280,720)) #640, 360
+            # image = image.resize((1280,720)) #640, 360
             # Update the label with the new image
 
             # Convert the image to Tkinter format

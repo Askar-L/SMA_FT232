@@ -17,6 +17,7 @@ from struct import calcsize as scalc, pack as spack, unpack as sunpack
 from threading import Lock
 from typing import Any, Iterable, Mapping, Optional, Tuple, Union
 from usb.core import Device as UsbDevice
+    # IF bug, pip install pyusb pls By Askar LIu
 from .ftdi import Ftdi, FtdiFeatureError
 from .misc import to_bool
 
