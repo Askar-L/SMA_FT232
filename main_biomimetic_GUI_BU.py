@@ -333,7 +333,7 @@ def process_camera(pid,process_share_dict={}):
     cam_num =  0
     cap = cv2.VideoCapture(cam_num,cv2.CAP_DSHOW) # Important!
     cam_flag = cap.isOpened()
-    print('Camera State:',cap.isOpened(),cap.get(3),cap.get(4))
+    print(cap.isOpened(),cap.get(3),cap.get(4))
     
     # Declare the width and height in variables 
     width, height = 1280, 720

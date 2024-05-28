@@ -34,11 +34,12 @@ class exprimentGUI():
                               relheight = 1-2*margin_page_H, relwidth=1-self.nav_bar_width)
         # self.page_frame.place(x=self.nav_bar_weidth,rely=0,relheight=1,width=window_width-self.nav_bar_weidth)
         
-        self.cap = cv2.VideoCapture(1,cv2.CAP_WINRT)  #cv2.CAP_DSHOW
+        cam_num =  0
+        self.cap = cv2.VideoCapture(cam_num,cv2.CAP_DSHOW)  #cv2.CAP_DSHOW  CAP_WINRT
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
         # Declare the width and height in variables
          
-        width, height = 1280, 720 # 
+        width, height =  1920,1080# 1280, 720 # 
         # Set the width and height 
         # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width) 
         # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
@@ -49,7 +50,7 @@ class exprimentGUI():
         image = cv2.imread(IMG_FOLDER+'1.jpg')
         # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)
-
+        self.st_image = image
         photo = ImageTk.PhotoImage(image)  
 
         self.video_label_0 = tk.Label(self.root_window) #  
@@ -70,15 +71,20 @@ class exprimentGUI():
         self.time_cv_st = time.perf_counter()
 
     def refresh_img(self):
-        ret, frame = self.cap.read()
+        # ret, frame = self.cap.read()
+        ret = True
+        frame = self.st_image
         if ret:
             # print(image.shape)
 
             # Convert the frame to PIL format
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = Image.fromarray(frame)
-            # # Resize the image to fit the label
-            # frame = frame.resize((1280,720)) #640, 360
+            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # frame = Image.fromarray(frame)
+
+            # Resize the image to fit the label
+            frame = frame.resize((640, 360)) #640, 360 1280,720
+            pass
+        
         try:
             # image = self.process_share_dict['photo']
             frame = ImageTk.PhotoImage(frame)  
@@ -92,8 +98,9 @@ class exprimentGUI():
             self.root_window.after(1,self.refresh_img)
 
 
-        except  Exception as err:
+        except Exception as err:
             print('Video frame load from thread manager failed:\n ')
+            print('Err:',err)
             print('Tring again ... ...')
             self.root_window.after(500,self.refresh_img)
 
@@ -101,13 +108,13 @@ class exprimentGUI():
         """ 将函数打包进线程 """
         self.myThread = threading.Thread(target=func, args=args)
         self.myThread.daemon = True
-        self.myThread .start()
+        self.myThread.start()
 
 if __name__ == '__main__':
     root = ttk.Window(hdpi=True,scaling=3,themename='darkly')  # darkly sandstone sandstone
     # process_share_dict['root'] = root
 
-    root.title("Contorl SMA")  # 设置窗口标题
+    root.title("Test Cam image")  # 设置窗口标题
     root.geometry('+0+0')
     exprimentGUI(root)
     root.mainloop()
