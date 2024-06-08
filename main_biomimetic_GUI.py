@@ -99,7 +99,6 @@ class exprimentGUI():
         log_video_frame = ttk.Labelframe(Frame_video_log,text='Video',bootstyle="info",)
         log_video_frame.place(relx=margin_video_log_box,rely=0,
                            relheight=height_video_box,relwidth= width_video_box )
-        
 
         # image = self.process_share_dict['photo']
         image = cv2.imread(IMG_FOLDER+'1.jpg')
@@ -108,11 +107,16 @@ class exprimentGUI():
         photo = ImageTk.PhotoImage(image)  
 
         self.video_label_0 = tk.Label(log_video_frame)
-        self.video_label_0.place(relheight=1,relwidth=1)#.pack(expand = "yes")# 
+        self.video_label_0.place(relx=0,rely=0,relheight= 0.95,relwidth=1)#.pack(expand = "yes")# 
         
         self.video_label_0.configure(image=photo)
-        self.video_label_0.image = photo     
+        self.video_label_0.image = photo 
         
+        # FPS box
+        self.variable_fps = ttk.StringVar();self.variable_fps.set('Fps: ')
+        self.entry_fps = ttk.Label(log_video_frame,textvariable= self.variable_fps,bootstyle='info')  
+        self.entry_fps.place(relx=0.2,rely=0.95,relheight=0.05,relwidth=0.1)
+
         # Log Box
         log_label_frmae = ttk.Labelframe(Frame_video_log,text='Log',bootstyle="info",)
         log_label_frmae.place(relx=margin_video_log_box,rely= height_video_box,
@@ -122,7 +126,7 @@ class exprimentGUI():
         self.scroller_log = ScrolledText(log_label_frmae, 
                     font=('Calibri Light',8),bootstyle='dark',vbar=True,autohide=True) # width=49, height=17,     
         self.scroller_log.place(relx=0,rely=0,relheight=1,relwidth=1)
- 
+
  
         sys.stdout = self.ScollerLogger(self.scroller_log,Frame_video_log)
         sys.stderr = sys.stdout
@@ -193,7 +197,7 @@ class exprimentGUI():
                     text= butten_list[_i],style=butten_style_list[_i], command = butten_func_list[_i])
             butten_connect.place(relx = _i/num_butten,rely=0,
                                  relheight=1,relwidth = 1/num_butten-margin_scale_butten_W)
-         
+        self.photo_acquired_t = 0
         self.butten_connect() 
         self.make_thread(self.refresh_img)
 
@@ -205,14 +209,31 @@ class exprimentGUI():
         #     return []
         # else: 
         #     self.timestamp_recived_img = t_new
+        self.timer_fps = time.time()
         try:
-            image = self.process_share_dict['photo']
+            _photo_acquired_t = self.process_share_dict['photo_acquired_t']
+
+            if self.photo_acquired_t == _photo_acquired_t: # Img not ready
+                self.root_window.after(5,self.refresh_img)
+                return []
+            else :
+                _dt = -self.photo_acquired_t + _photo_acquired_t
+                self.photo_acquired_t = _photo_acquired_t
+                image = self.process_share_dict['photo']
+            
             photo = ImageTk.PhotoImage(image)  
-            self.video_label_0.configure(image=photo)
+            self.video_label_0.configure(image=photo,)
             self.video_label_0.image = photo    
-            self.root_window.after(5,self.refresh_img)
+            self.root_window.after(1,self.refresh_img)
+            
+            # dt =  time.time() - self.timer_fps
+            # self.timer_fps = time.time()
+            self.variable_fps.set('FPS: '+str(int(1/_dt)))
+            return []
+
         except  Exception as err:
             print('Video frame load from thread manager failed:\n ')
+            print('Due to:',err)
             print('Tring again ... ...')
             self.root_window.after(1000,self.refresh_img)
 
@@ -333,7 +354,7 @@ def process_GUI(pid,process_share_dict={}):
 def process_camera(pid,process_share_dict={}):
     # process_share_dict['ready'] = False
     # Define a video capture object 
-    cam_num =  0
+    cam_num =  2
     cap = cv2.VideoCapture(cam_num,cv2.CAP_DSHOW) # Important!
     cam_flag = cap.isOpened()
     print('Camera State:',cap.isOpened(),cap.get(3),cap.get(4))
@@ -342,7 +363,7 @@ def process_camera(pid,process_share_dict={}):
     width, height = 1280, 720 # 1920,1080# 
     
     # Set FPS
-    cap.set(cv2.CAP_PROP_FPS,60)
+    cap.set(cv2.CAP_PROP_FPS,120)
     
     # Set the width and height 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width) 
@@ -356,21 +377,16 @@ def process_camera(pid,process_share_dict={}):
         ret, frame = cap.read()
         if ret:
             # Convert the frame to PIL format
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image = Image.fromarray(image)
-            # # Resize the image to fit the label
-            # image = image.resize((1280,720)) #640, 360
+            # image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image = Image.fromarray(frame)
+
+            # # Resize the image to fit the label 
+            # image = image.resize((1280,int(1280*image.height/image.width))) #640, 360
             # Update the label with the new image
-
-            # Convert the image to Tkinter format
-            # photo = ImageTk.PhotoImage(image)      
-
+        
             process_share_dict['photo'] = image
-            # process_share_dict['t_ready'] = time.time()
-            # root.video_label_0.configure(image=photo)
-            # root.video_label_0.image = photo
-            # print("Providing image")
-            # time.sleep(0.5)
+            process_share_dict['photo_acquired_t'] = time.time()
+            
         pass
     pass
 

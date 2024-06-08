@@ -34,17 +34,25 @@ class exprimentGUI():
                               relheight = 1-2*margin_page_H, relwidth=1-self.nav_bar_width)
         # self.page_frame.place(x=self.nav_bar_weidth,rely=0,relheight=1,width=window_width-self.nav_bar_weidth)
         
-        cam_num =  0
+        cam_num =  2
         self.cap = cv2.VideoCapture(cam_num,cv2.CAP_DSHOW)  #cv2.CAP_DSHOW  CAP_WINRT
-        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+
+
         # Declare the width and height in variables
          
-        width, height =  1920,1080# 1280, 720 # 
+        width, height =  1280,720# 1280, 720 # 
         # Set the width and height 
         # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width) 
         # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         self.cap.set(3, width) 
         self.cap.set(4, height)
+        
+    
+        # Set FPS
+        self.cap.set(cv2.CAP_PROP_FPS,120)
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+        self.cap.set(cv2.CAP_PROP_CONVERT_RGB,0)
+        # self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
 
         # image = self.process_share_dict['photo']
         image = cv2.imread(IMG_FOLDER+'1.jpg')
@@ -65,24 +73,34 @@ class exprimentGUI():
         # self.entry_fps.configure(state='readonly')
         self.entry_fps.place(relx=0,rely=0,relheight=0.1,relwidth=0.1)#.pack(expand = "yes")# 
 
+        # Save video
+        video_file_name = 'IMG/video/'+str(time.time()) + '.avi'
+        
+        fourcc =  cv2.VideoWriter_fourcc(*'I420')# XVID I420 3IVD
+        fps = 120
+        self.video_file = cv2.VideoWriter(video_file_name,fourcc,fps,(640,480))
+
 
         self.thread_it(self.refresh_img)
         self.frame_id = 0
         self.time_cv_st = time.perf_counter()
+ 
 
     def refresh_img(self):
-        # ret, frame = self.cap.read()
+        ret, frame = self.cap.read()
         ret = True
-        frame = self.st_image
+
+        # frame = self.st_image
         if ret:
             # print(image.shape)
 
             # Convert the frame to PIL format
             # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            # frame = Image.fromarray(frame)
+            self.video_file.write(frame)
+            frame = Image.fromarray(frame)
 
             # Resize the image to fit the label
-            frame = frame.resize((640, 360)) #640, 360 1280,720
+            # frame = frame.resize((640, 360)) #640, 360 1280,720
             pass
         
         try:
@@ -93,8 +111,9 @@ class exprimentGUI():
             self.frame_id += 1
 
             if self.frame_id>60:
-                self.variable_fps.set( self.frame_id / (time.perf_counter()-self.time_cv_st) )
-
+                self.variable_fps.set( (self.frame_id-60) / (time.perf_counter()-self.time_cv_st) )
+            else :
+                self.variable_fps.set( -1 )
             self.root_window.after(1,self.refresh_img)
 
 
@@ -111,6 +130,8 @@ class exprimentGUI():
         self.myThread.start()
 
 if __name__ == '__main__':
+
+    print('Running on env: ',sys.version_info)
     root = ttk.Window(hdpi=True,scaling=3,themename='darkly')  # darkly sandstone sandstone
     # process_share_dict['root'] = root
 

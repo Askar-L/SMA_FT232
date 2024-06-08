@@ -1,6 +1,7 @@
 # This file is to find out how to read sensoe values of LSM6DS3
+
 # import lib.LSM6DS3.lsm6ds3 as LSM6DS3
-# sys.path.append("..")
+sys.path.append("..")
 
 import time
 import numpy as np
