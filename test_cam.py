@@ -44,16 +44,23 @@ class exprimentGUI():
         # Set the width and height 
         # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width) 
         # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        self.cap.set(3, width) 
-        self.cap.set(4, height)
-        
-    
-        # Set FPS
-        self.cap.set(cv2.CAP_PROP_FPS,120)
-        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-        self.cap.set(cv2.CAP_PROP_CONVERT_RGB,0)
-        # self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
 
+        
+        cam_name = 'AR0234' # 'OV7251' # Aptina AR0234 
+        if cam_name == 'AR0234':
+            fps = 90
+            resolution = (1920,1200)
+        elif cam_name == 'OV7251':
+            fps = 120
+            resolution = (640,480)
+            self.cap.set(cv2.CAP_PROP_CONVERT_RGB,0)
+
+        self.cap.set(3, resolution[0]) 
+        self.cap.set(4, resolution[1])
+        # Set FPS
+        self.cap.set(cv2.CAP_PROP_FPS,fps)
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+         
         # image = self.process_share_dict['photo']
         image = cv2.imread(IMG_FOLDER+'1.jpg')
         # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -74,11 +81,9 @@ class exprimentGUI():
         self.entry_fps.place(relx=0,rely=0,relheight=0.1,relwidth=0.1)#.pack(expand = "yes")# 
 
         # Save video
-        video_file_name = 'IMG/video/'+str(time.time()) + '.avi'
-        
+        video_file_name = 'IMG/video/' +cam_name +'_' +str(time.time()) + '.avi'
         fourcc =  cv2.VideoWriter_fourcc(*'I420')# XVID I420 3IVD
-        fps = 120
-        self.video_file = cv2.VideoWriter(video_file_name,fourcc,fps,(640,480))
+        self.video_file = cv2.VideoWriter(video_file_name,fourcc,fps,resolution)
 
 
         self.thread_it(self.refresh_img)
@@ -87,7 +92,7 @@ class exprimentGUI():
  
 
     def refresh_img(self):
-        ret, frame = self.cap.read()
+        ret, frame_BGR = self.cap.read()
         ret = True
 
         # frame = self.st_image
@@ -95,8 +100,8 @@ class exprimentGUI():
             # print(image.shape)
 
             # Convert the frame to PIL format
-            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            self.video_file.write(frame)
+            frame = cv2.cvtColor(frame_BGR, cv2.COLOR_BGR2RGB)
+            self.video_file.write(frame_BGR)
             frame = Image.fromarray(frame)
 
             # Resize the image to fit the label

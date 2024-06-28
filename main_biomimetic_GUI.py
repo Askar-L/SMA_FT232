@@ -2,7 +2,7 @@
 # * Multi Process version
 # Class of SMA single finger robot 
 # Created by Askar. Liu @ 20231230
-# Modified @20231231
+# Modified @20240628
 
 # Based on https://cloud.tencent.com/developer/article/2192324
 
