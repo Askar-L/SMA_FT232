@@ -404,8 +404,8 @@ class AngleTracker(object): # TODO
             else: print("\tSuccessfully load calibration data!:",self.maker_position_frame0,"\n")
 
         except Exception as Err: 
-            print("\tErr occurs when loading maker_position_frame0, Please calibrate angle sensor: ",self.name)
-            self.calibrateRange()
+            print("\tErr occurs when loading maker_position_frame0, Please calibrate angle sensor: \n",Err)
+            # self.calibrateRange()
         pass
 
     def store_point_pos(self,):
