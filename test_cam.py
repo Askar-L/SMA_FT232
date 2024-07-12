@@ -1,3 +1,6 @@
+# Debugged @ 20240711
+# Created by Askar.Liu
+
 import cv2
 import ttkbootstrap as ttk
 from PIL import Image, ImageTk
@@ -45,12 +48,13 @@ class exprimentGUI():
         # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width) 
         # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
-        
-        cam_name = 'AR0234' # 'OV7251' # Aptina AR0234 
-        if cam_name == 'AR0234':
+        ## Create CAM obj
+
+        cam_name = 'OV7251' # 'OV7251' #  
+        if cam_name == 'AR0234': # Aptina AR0234
             fps = 90
-            resolution = (1920,1200)
-        elif cam_name == 'OV7251':
+            resolution = (800,600)#(1920,1200)
+        elif cam_name == 'OV7251': # Grayscale
             fps = 120
             resolution = (640,480)
             self.cap.set(cv2.CAP_PROP_CONVERT_RGB,0)
@@ -98,10 +102,11 @@ class exprimentGUI():
         # frame = self.st_image
         if ret:
             # print(image.shape)
-
+            self.video_file.write(frame_BGR)
+            
             # Convert the frame to PIL format
             frame = cv2.cvtColor(frame_BGR, cv2.COLOR_BGR2RGB)
-            self.video_file.write(frame_BGR)
+
             frame = Image.fromarray(frame)
 
             # Resize the image to fit the label
@@ -115,7 +120,7 @@ class exprimentGUI():
             self.video_label_0.image = frame    
             self.frame_id += 1
 
-            if self.frame_id>60:
+            if self.frame_id>300:
                 self.variable_fps.set( (self.frame_id-60) / (time.perf_counter()-self.time_cv_st) )
             else :
                 self.variable_fps.set( -1 )

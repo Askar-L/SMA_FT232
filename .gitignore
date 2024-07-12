@@ -2,3 +2,4 @@ IMG/
 REC/
 LOG/
 .pyc
+__pycache__
