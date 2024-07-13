@@ -37,7 +37,7 @@ class exprimentGUI():
                               relheight = 1-2*margin_page_H, relwidth=1-self.nav_bar_width)
         # self.page_frame.place(x=self.nav_bar_weidth,rely=0,relheight=1,width=window_width-self.nav_bar_weidth)
         
-        cam_num =  2
+        cam_num =  1
         self.cap = cv2.VideoCapture(cam_num,cv2.CAP_DSHOW)  #cv2.CAP_DSHOW  CAP_WINRT
 
 
@@ -50,10 +50,11 @@ class exprimentGUI():
 
         ## Create CAM obj
 
-        cam_name = 'OV7251' # 'OV7251' #  
+        cam_name = 'AR0234' # 'OV7251' #  
         if cam_name == 'AR0234': # Aptina AR0234
             fps = 90
-            resolution = (800,600)#(1920,1200)
+            resolution = (1920,1080)# (800,600)#(1920,1200)
+
         elif cam_name == 'OV7251': # Grayscale
             fps = 120
             resolution = (640,480)
@@ -85,10 +86,12 @@ class exprimentGUI():
         self.entry_fps.place(relx=0,rely=0,relheight=0.1,relwidth=0.1)#.pack(expand = "yes")# 
 
         # Save video
+        fourcc = 'MJPG' # 'I420'
         video_file_name = 'IMG/video/' +cam_name +'_' +str(time.time()) + '.avi'
-        fourcc =  cv2.VideoWriter_fourcc(*'I420')# XVID I420 3IVD
-        self.video_file = cv2.VideoWriter(video_file_name,fourcc,fps,resolution)
 
+        fourcc =  cv2.VideoWriter_fourcc(*fourcc)# XVID I420 3IVD
+        self.video_file = cv2.VideoWriter(video_file_name,fourcc,fps,resolution)
+        print("Saving Video file:",video_file_name," in ")
 
         self.thread_it(self.refresh_img)
         self.frame_id = 0
@@ -131,7 +134,7 @@ class exprimentGUI():
             print('Video frame load from thread manager failed:\n ')
             print('Err:',err)
             print('Tring again ... ...')
-            self.root_window.after(500,self.refresh_img)
+            self.root_window.after(1,self.refresh_img)
 
     def thread_it(self, func, *args):
         """ 将函数打包进线程 """
