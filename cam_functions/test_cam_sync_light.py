@@ -1,5 +1,12 @@
 # Debugged @ 20240713
 # Created by Askar.Liu
+if __name__=='__main__': # Test codes # Main process
+    import os,sys
+    import pyftdi.spi as spi
+    parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0,parentdir)
+
+    from lib.GENERALFUNCTIONS import *
 
 import cv2
 import ttkbootstrap as ttk
@@ -18,7 +25,7 @@ class AsyncVideoSaver:
         self.frame_size = frame_size
         self.maxlen = 30
         self.frame_queue = deque()
-        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=8)
         self.out = cv2.VideoWriter(self.filename, cv2.VideoWriter_fourcc(*fourcc), self.fps, self.frame_size)
 
         print("Saving Video file:",video_file_name," in ")
@@ -30,6 +37,7 @@ class AsyncVideoSaver:
 
     def add_frame(self, frame):
         self.frame_queue.append(frame)
+        
         if len(self.frame_queue) >= self.maxlen-2:  # 批量处理
             frames_to_save = list(self.frame_queue)
             self.frame_queue.clear()
@@ -52,32 +60,74 @@ if __name__ == "__main__":
     cam_name = 'AR0234' # 'OV7251' #  
     if cam_name == 'AR0234': # Aptina AR0234
         target_fps = 90
-        resolution = (1280,720)#q(800,600)# (800,600)#(1920,1200) (1280,720)#
+        resolution = (1920,1080)#q(800,600)# (800,600)#(1920,1200) (1280,720)#
         width, height = resolution
 
-        cap.set(3, resolution[0]) 
-        cap.set(4, resolution[1])
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0]) 
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
         # Set FPS
         cap.set(cv2.CAP_PROP_FPS,target_fps)
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG')) # 'I420'
-        # cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)  # 设置缓冲区大小为2
-
-        actual_fps = cap.get(cv2.CAP_PROP_FPS)
-        print(f"Target FPS: {target_fps}, Actual FPS: {actual_fps}")
-
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 0)  # 设置缓冲区大小为2
+        
+        # 曝光控制
+        cap.set(cv2.CAP_PROP_GAIN, 20)  # 调整增益值，具体范围取决于摄像头
+        cap.set(cv2.CAP_PROP_EXPOSURE, -12)  # 设置曝光值，负值通常表示较短的曝光时间
+ 
         # Save video
         fourcc = 'MJPG' # 'I420' X264
-        video_file_name = 'IMG/video/' +cam_name +'_' + time.strftime("%m%d-%H%M%S")  + '.avi'
 
-        saver = AsyncVideoSaver(video_file_name, fourcc, target_fps, resolution)
     elif cam_name == 'OV7251': # Grayscale
         target_fps = 120
-        resolution = (640,480)
+        resolution =  (640,480) # (640,480)
         width, height = resolution
-        cap.set(cv2.CAP_PROP_CONVERT_RGB,0)
+        # cap.set(cv2.CAP_PROP_CONVERT_RGB,0)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0]) 
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
+
+        # Set FPS
+        cap.set(cv2.CAP_PROP_FPS,target_fps)
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG')) # 'I420'
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 0)  # 设置缓冲区大小为2
+        
+        # # 曝光控制
+        cap.set(cv2.CAP_PROP_GAIN, -0.5)  # 调整增益值，具体范围取决于摄像头
+        cap.set(cv2.CAP_PROP_EXPOSURE, -20)  # 设置曝光值，负值通常表示较短的曝光时间
+
+        fourcc = 'MJPG' 
 
 
 
+    elif cam_name == 'Oneplus':
+       
+        target_fps = 480
+        resolution = (1280,720) #q(800,600)# (800,600)#(1920,1200) (1280,720)#
+        width, height = resolution 
+        cap = cv2.VideoCapture(2)
+ 
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0]) 
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
+        # Set FPS
+        cap.set(cv2.CAP_PROP_FPS,target_fps)
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG')) # 'I420'
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)  # 设置缓冲区大小为2
+        
+        # 曝光控制
+        cap.set(cv2.CAP_PROP_GAIN, 4)  # 调整增益值，具体范围取决于摄像头
+        cap.set(cv2.CAP_PROP_EXPOSURE, -10)  # 设置曝光值，负值通常表示较短的曝光时间
+
+        fourcc = 'X264'
+
+        pass
+
+
+    actual_fps = cap.get(cv2.CAP_PROP_FPS)
+    print(f"Target FPS: {target_fps}, Actual FPS: {actual_fps}")
+    if fourcc == 'MJPG':
+        video_file_name = 'IMG/video/' +cam_name +'_' + time.strftime("%m%d-%H%M%S")  + '.avi'
+    elif fourcc == 'X264':
+        video_file_name = 'IMG/video/' +cam_name +'_' + time.strftime("%m%d-%H%M%S")  + '.mp4'
+    saver = AsyncVideoSaver(video_file_name, fourcc, target_fps, resolution)
     frame_id = 0
     time_cv_st = time.perf_counter()
     
@@ -102,7 +152,7 @@ if __name__ == "__main__":
         frame_id += 1
         frame_times.append(cur_time)
 
-        if frame_id % int(actual_fps // 20) == 0:  # 每示两次
+        if True: #frame_id % int(actual_fps // 20) == 0:  # 每示两次
 
             # for _frame in frame_queue:
             #     video_file.write(_frame)
