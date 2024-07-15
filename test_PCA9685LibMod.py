@@ -4,21 +4,27 @@ from re import T
 import time
 # sys.path.append("..")
 # from lib.pyftdi_mod import i2c as i2c
-from pca9685.PCA9685 import Pca9685_01 as PCA9685
-import pyftdi.i2c as i2c
+from pca9685.PCA9685 import Pca9685_01 as actuator_device
+
+from pyftdimod import i2c as i2c
 
 
 if __name__=='__main__':
 
   # Instantiate an I2C controller
   IIC_device = i2c.I2cController()
+
+  i2c_actuator_controller_URL = 'ftdi://ftdi:232h:0:FF/0'
   # Configure the first interface (IF/1) of the FTDI device as an I2C master
-  IIC_device.configure('ftdi://ftdi:232h:0:FF/0',frequency=1E6) # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+  # IIC_device.configure('ftdi://ftdi:232h:0:FF/0',frequency=1E6) # ftdi:///1 OR ftdi://ftdi:2232h/1 ?? direction=0x78
+  IIC_device.configure(i2c_actuator_controller_URL,frequency = 1E6,#3E6, 1E6
+                            rdoptim=True,clockstretching=True) # On IIC   
+
 
   print('\n\n')
   pwm_addr = 0x40
-  pca9685 = PCA9685(IIC_device,debug=False,easy_mdoe=True)
-  pca9685.reset()
+  pca9685 = actuator_device(IIC_device,debug=False) # Link PCA9685
+  # pca9685.reset()
   # exit()
 
   pca9685.setPWMFreq(1526)
@@ -27,28 +33,31 @@ if __name__=='__main__':
   # exit()
 
 
-  dr = 1
-  t0 = time.time()
-  for _i in range(100):
+  # dr = 1
+  # t0 = time.time()
+  # for _i in range(100):
     
-    pca9685.setDutyRatioCHS([0], duty_ratio=_i/100,relax=False) # 100 for 1.79 ->> 0.41794872283935547
-    # pca9685.setDutyRatioCH(15, duty_ratio=_i/100,stop_sending=True) # 100 for 0.13S
-  print(time.time()-t0)
-  pca9685.setDutyRatioCHS([15,0], duty_ratio=0,relax=False) # 100 for 1.79
-
-  exit()
-
-  while True:
-    T = 0.00001
-    # time.sleep(T)
-    # pca9685.setDutyRatioCH(15, duty_ratio=dr)
-    pca9685.setDutyRatioCH(0, duty_ratio=dr)
-
-    # # time.sleep(T)
-    # pca9685.setDutyRatioCH(0,0)
-    # pca9685.setDutyRatioCH(4,0)
+  #   pca9685.setDutyRatioCHS([0], duty_ratio=_i/100,relax=True) # 100 for 1.79 ->> 0.41794872283935547
+  #   # pca9685.setDutyRatioCH(15, duty_ratio=_i/100,stop_sending=True) # 100 for 0.13S
+  # print(time.time()-t0)
+  # pca9685.setDutyRatioCHS([15,0], duty_ratio=0,relax=False) # 100 for 1.79
  
+  channels = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+  output_levels0 = [0,0,0,0, 0,1,0,0, 0,0,0,0, 0,0,0,0]
+  output_levels1 = [1,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,0,0]
 
+  pulse_t = 0.1
+  while True:
+    time.sleep(pulse_t)
+
+    for _ch,_DR, in zip( channels, output_levels0 ):
+      # print(_ch,_DR)
+      pca9685.setDutyRatioCH(channel=_ch,duty_ratio = _DR,relax=False)
+      
+    time.sleep(pulse_t)
+
+    for _ch,_DR, in zip( channels, output_levels1 ):
+      pca9685.setDutyRatioCH(channel=_ch,duty_ratio = _DR,relax=False)
   exit()
 
 
