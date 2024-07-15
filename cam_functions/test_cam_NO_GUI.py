@@ -2,7 +2,7 @@
 # Created by Askar.Liu
 if __name__=='__main__': # Test codes # Main process
     import os,sys
-    import pyftdi.spi as spi
+    # import pyftdi.spi as spi
     parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0,parentdir)
 
@@ -30,7 +30,6 @@ class AsyncVideoSaver:
 
         print("Saving Video file:",video_file_name," in ")
 
-
     def save_frame_batch(self, frames):
         for frame in frames:
             self.out.write(frame)
@@ -54,10 +53,13 @@ if __name__ == "__main__":
     print('Running on env: ',sys.version_info)
     
     ## Create CAM obj
-    cam_num =  1
-    cap = cv2.VideoCapture(cam_num,cv2.CAP_DSHOW)  #cv2.CAP_DSHOW  CAP_WINRT
-
+    cam_num =  0
+    
+    is_lighting = False
+    is_recod_video = False    
     cam_name = 'AR0234' # 'OV7251' #  
+    
+    cap = cv2.VideoCapture(cam_num,cv2.CAP_DSHOW)  #cv2.CAP_DSHOW  CAP_WINRT
     if cam_name == 'AR0234': # Aptina AR0234
         target_fps = 90
         resolution = (1920,1080)#q(800,600)# (800,600)#(1920,1200) (1280,720)#
@@ -68,12 +70,14 @@ if __name__ == "__main__":
         # Set FPS
         cap.set(cv2.CAP_PROP_FPS,target_fps)
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG')) # 'I420'
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 0)  # 设置缓冲区大小为2
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)  # 设置缓冲区大小为2
         
-        # 曝光控制
-        cap.set(cv2.CAP_PROP_GAIN, 20)  # 调整增益值，具体范围取决于摄像头
-        cap.set(cv2.CAP_PROP_EXPOSURE, -12)  # 设置曝光值，负值通常表示较短的曝光时间
- 
+        if is_lighting:            # 曝光控制
+            cap.set(cv2.CAP_PROP_GAIN, 20)  # 调整增益值，具体范围取决于摄像头
+            cap.set(cv2.CAP_PROP_EXPOSURE, -12)  # 设置曝光值，负值通常表示较短的曝光时间
+        else:            
+            cap.set(cv2.CAP_PROP_GAIN, 0)  # 调整增益值，具体范围取决于摄像头
+            cap.set(cv2.CAP_PROP_EXPOSURE, -3)  # 设置曝光值，负值通常表示较短的曝光时间
         # Save video
         fourcc = 'MJPG' # 'I420' X264
 
@@ -95,8 +99,6 @@ if __name__ == "__main__":
         cap.set(cv2.CAP_PROP_EXPOSURE, -20)  # 设置曝光值，负值通常表示较短的曝光时间
 
         fourcc = 'MJPG' 
-
-
 
     elif cam_name == 'Oneplus':
        
@@ -127,7 +129,8 @@ if __name__ == "__main__":
         video_file_name = 'IMG/video/' +cam_name +'_' + time.strftime("%m%d-%H%M%S")  + '.avi'
     elif fourcc == 'X264':
         video_file_name = 'IMG/video/' +cam_name +'_' + time.strftime("%m%d-%H%M%S")  + '.mp4'
-    saver = AsyncVideoSaver(video_file_name, fourcc, target_fps, resolution)
+    
+    if is_recod_video: saver = AsyncVideoSaver(video_file_name, fourcc, target_fps, resolution)
     frame_id = 0
     time_cv_st = time.perf_counter()
     
@@ -140,7 +143,7 @@ if __name__ == "__main__":
         ret, frame_raw = cap.read()
 
         if ret:
-            saver.add_frame(frame_raw)
+            if is_recod_video: saver.add_frame(frame_raw)
             # Convert the frame to PIL format
             # frame = cv2.cvtColor(frame_BGR, cv2.COLOR_BGR2RGB)
             # frame = Image.fromarray(frame)
@@ -153,10 +156,6 @@ if __name__ == "__main__":
         frame_times.append(cur_time)
 
         if True: #frame_id % int(actual_fps // 20) == 0:  # 每示两次
-
-            # for _frame in frame_queue:
-            #     video_file.write(_frame)
-            # frame_queue.clear()
  
             if frame_id>30: cur_fps = len(frame_times) / (frame_times[-1] - frame_times[0])
             else : cur_fps = -1
@@ -172,4 +171,4 @@ if __name__ == "__main__":
  
 cap.release()
 cv2.destroyAllWindows()
-saver.finalize()
+if is_recod_video: saver.finalize()
