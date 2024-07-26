@@ -1,3 +1,18 @@
 {
-    "python.pythonPath": "C:\\Users\\51165\\AppData\\Local\\Programs\\Python\\Python37\\python.exe"
+    "python.pythonPath": "C:\\Users\\51165\\AppData\\Local\\Programs\\Python\\Python37\\python.exe",
+
+    "media.player": {
+        "players": [
+            {
+                "name": "My Spotify player",
+                "type": "spotify",
+            },
+
+            {
+                "name": "My VLC player",
+                "type": "vlc",
+            }
+        ]
+    }
 }
+ 
