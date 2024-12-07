@@ -310,7 +310,11 @@ class Pca9685_01(object):
       return []
   
   def setDutyRatioCH(self,channel,duty_ratio,relax=True):
-
+    # Set duty ratio of a channel 
+        # channels: Channels to activate. A list of int from 0 to 15. 
+        # dutys: Duty ratio that each activating requires. A list of numbers from 0 to 1
+        # relax: boolean value of whether  to relac IIC.
+    
     # if not self.easy_mdoe:
     #   print("Pls use easy mode to Duty Ratio!"); return []
     # if (channel<0) or channel >15: 
@@ -345,7 +349,11 @@ class Pca9685_01(object):
     return []
   
   def setDutyRatioCHS(self,channels,duty_ratio,relax=False): # 20220815
-
+    # Set duty ratio of all channel in channels at same time.
+        # channels: Channels to activate. A list of int from 0 to 15. 
+        # dutys: Duty ratio that each activating requires. A list of numbers from 0 to 1
+        # relax: boolean value of wheather to relac IIC.
+    
     if len(channels) >= 1:
       if self.OCH_mode:
         for _ch in channels: 
@@ -371,6 +379,11 @@ class Pca9685_01(object):
   
   # 手部功能的初级实现！ 后需另外建立lib
   def test_wires(self,channels,dutys,intervals,is_show = False):
+    # Activate each channels in list for % of duty and a duration of interval(second).
+      # channels: Channels to activate. A list of int from 0 to 15. 
+      # dutys: Duty ratio that each activating requires. A list of numbers from 0 to 1
+      # intervals: Duty ratio that each activating requires
+
     # [active_duty,sustain_duty,stop_duty] = dutys
     # [burst_interval,sustain_interval,stop_interval] = intervals
     # if not len(dutys)==len(intervals): 

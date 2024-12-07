@@ -338,7 +338,6 @@ class exprimentGUI():
         else: return None
 
 
-
 def process_GUI(pid,process_share_dict={}):
     root = ttk.Window(hdpi=True,scaling=3,themename='darkly')  # darkly sandstone sandstone
     # process_share_dict['root'] = root
